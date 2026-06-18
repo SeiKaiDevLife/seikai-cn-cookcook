@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let isInCart = cartRecipeIds.includes(recipe.id);
-            card.className = isInCart ? 'recipe-card in-cart' : 'recipe-card';
+            card.className = '';
             card.innerHTML = `
                 <div class="match-list-item ${isInCart ? 'in-cart' : ''}" onclick="window.openDetail(recipes.find(x => x.id === '${recipe.id}'))" style="position:relative;">
                 ${isInCart ? 
@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ossClient) throw new Error("OSS client not initialized");
         const jsonStr = JSON.stringify(recipes, null, 2);
         const blob = new Blob([jsonStr], {type: 'application/json'});
-        await ossClient.put('public/data/recipes.json', blob);
+        await ossClient.put('cookcook/public/data/recipes.json', blob);
     };
 
     window.submitRecipe = function() {
@@ -620,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pubCoverFile) {
                 let ext = pubCoverFile.name.split('.').pop();
                 let ossName = `public/covers/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-                await ossClient.put(ossName, pubCoverFile);
+                await ossClient.put('cookcook/' + ossName, pubCoverFile);
                 finalCoverUrl = ossName;
             }
 
@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let isVideo = f.type.startsWith('video');
                 let dir = isVideo ? 'public/videos/raw/' : 'public/tutorials/';
                 let ossName = `${dir}${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-                await ossClient.put(ossName, f);
+                await ossClient.put('cookcook/' + ossName, f);
                 finalTutorialUrls.push(ossName);
             }
             
@@ -706,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // SAVE TO OSS
             const jsonStr = JSON.stringify(recipes, null, 2);
             const blob = new Blob([jsonStr], {type: 'application/json'});
-            await ossClient.put('public/data/recipes.json', blob);
+            await ossClient.put('cookcook/public/data/recipes.json', blob);
 
             alert((editingRecipeId ? "修改" : "发布") + "成功！数据已持久化至云端。");
             
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recipeGrid.innerHTML = '';
         if (filtered.length === 0) {
-            recipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">暂无找到相关菜谱</div>';
+            recipeGrid.innerHTML = '<div style="column-span: all; text-align: center; padding: 3rem; color: var(--text-muted);">暂无找到相关菜谱</div>';
             return;
         }
 
@@ -1433,19 +1433,69 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>` : ''}
                         </div>
                         <div class="cooking-action">
-                            <div class="swipe-hint" onclick="window.finishStep()">
-                                <div class="swipe-arrows">
-                                    <i class="fa-solid fa-chevron-left"></i>
-                                    <i class="fa-solid fa-chevron-left"></i>
+                            <div id="swipeSliderTrack" style="position:relative; width:90%; margin:0 auto; max-width:400px; height:60px; background:rgba(0,0,0,0.05); border-radius:30px; overflow:hidden;">
+                                <div style="position:absolute; width:100%; text-align:center; line-height:60px; color:#999; font-weight:700; font-size:1rem; user-select:none; pointer-events:none;">向左滑动完成步骤</div>
+                                <div id="swipeSliderThumb" style="position:absolute; right:0; top:0; width:60px; height:60px; border-radius:30px; background:var(--text-main); color:#fff; display:flex; justify-content:center; align-items:center; z-index:2; font-size:1.2rem; box-shadow:-5px 0 15px rgba(0,0,0,0.1); cursor:grab;">
                                     <i class="fa-solid fa-chevron-left"></i>
                                 </div>
-                                <span>向左滑动进入下一步</span>
                             </div>
                         </div>
                     </div>
                 `;
             }
             root.innerHTML = html;
+            
+            // Slider Logic
+            let sliderThumb = document.getElementById('swipeSliderThumb');
+            let sliderTrack = document.getElementById('swipeSliderTrack');
+            if (sliderThumb && sliderTrack) {
+                let isDragging = false;
+                let startX = 0;
+                let currentTx = 0;
+                let maxTx = sliderTrack.clientWidth - sliderThumb.clientWidth;
+
+                const startDrag = (e) => {
+                    isDragging = true;
+                    startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    sliderThumb.style.transition = 'none';
+                };
+
+                const onDrag = (e) => {
+                    if (!isDragging) return;
+                    let x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    let deltaX = x - startX;
+                    
+                    // We are sliding LEFT, so deltaX will be negative
+                    // Initial position is at RIGHT (right: 0), so translateX should go from 0 to -maxTx
+                    if (deltaX > 0) deltaX = 0;
+                    if (deltaX < -maxTx) deltaX = -maxTx;
+                    
+                    currentTx = deltaX;
+                    sliderThumb.style.transform = `translateX(${currentTx}px)`;
+                };
+
+                const endDrag = (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    sliderThumb.style.transition = 'transform 0.3s';
+                    
+                    if (currentTx <= -maxTx * 0.7) {
+                        // Success - slide all the way and finish
+                        sliderThumb.style.transform = `translateX(${-maxTx}px)`;
+                        setTimeout(() => window.finishStep(), 150);
+                    } else {
+                        // Revert
+                        sliderThumb.style.transform = `translateX(0px)`;
+                    }
+                };
+
+                sliderThumb.addEventListener('mousedown', startDrag);
+                sliderThumb.addEventListener('touchstart', startDrag, {passive: false});
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('touchmove', onDrag, {passive: false});
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
         } else if (guideState === 'DONE') {
             let html = `
                 <div class="guide-fullscreen guide-done">
@@ -1480,12 +1530,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let html = matches.slice(0, 5).map(r => `
-            <div class="cart-item" style="padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
-                <div style="display:flex; align-items:center; gap:1rem;">
-                    <img src="${window.getOSSUrl(r.coverUrl, 'cover_small')}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
-                    <div style="font-weight:600; font-size:0.95rem;">${r.name}</div>
-                </div>
-                <button class="add-to-cart-btn" onclick="window.addToCart('${r.id}'); document.getElementById('guideSearchInput').value=''; window.handleGuideSearch();"><i class="fa-solid fa-plus"></i></button>
+            <div class="cart-item" style="display:flex; align-items:center; padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
+                <img src="${window.getOSSUrl(r.coverUrl, 'cover_small')}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; margin-right: 1rem; flex-shrink: 0;">
+                <div style="font-weight:600; font-size:0.95rem; white-space: nowrap;">${r.name}</div>
+                <div style="flex-grow: 1; border-bottom: 1px dashed rgba(0,0,0,0.15); margin: 0 1rem;"></div>
+                <button class="add-to-cart-btn" style="flex-shrink: 0;" onclick="window.addToCart('${r.id}'); document.getElementById('guideSearchInput').value=''; window.handleGuideSearch();"><i class="fa-solid fa-plus"></i></button>
             </div>
         `).join('');
         resultsBox.innerHTML = html;
@@ -1493,8 +1542,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.startPrep = function() {
         if (cartRecipeIds.length === 0) return;
-        guideState = 'PREP';
-        renderGuide();
+        window.runWithOSS(() => {
+            guideState = 'PREP';
+            renderGuide();
+        });
     };
 
     window.goToOrder = function() {
@@ -1622,20 +1673,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderGuide();
         });
     };
-
-    // Swipe support for cooking
-    let touchStartX = 0;
-    document.addEventListener('touchstart', e => {
-        if (guideState === 'COOKING') touchStartX = e.changedTouches[0].screenX;
-    });
-    document.addEventListener('touchend', e => {
-        if (guideState === 'COOKING') {
-            let touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX - touchEndX > 80) { // swipe left
-                window.finishStep();
-            }
-        }
-    });
 
     // Carousel Logic
     window.scrollCarousel = function(dir) {

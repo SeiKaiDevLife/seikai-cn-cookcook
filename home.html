@@ -48,10 +48,10 @@
         <div id="ingredientsView" class="view-section">
             <div class="ing-header">
                 <h2>你有什么食材？</h2>
-                <div class="ing-input-group">
+                <form class="ing-input-group" onsubmit="event.preventDefault(); document.getElementById('addIngBtn').click();">
                     <input type="text" id="ingInput" placeholder="输入食材，如：鸡蛋、西红柿..." />
-                    <button id="addIngBtn"><i class="fa-solid fa-plus"></i></button>
-                </div>
+                    <button type="button" id="addIngBtn"><i class="fa-solid fa-plus"></i></button>
+                </form>
                 <div class="ing-tags" id="ingTagsContainer">
                     <!-- Tags will go here -->
                 </div>
@@ -272,13 +272,19 @@
     </div>
 
     <!-- SecPwd Modal -->
-    <div class="modal" id="secPwdModal">
-        <div class="modal-content" style="max-width:300px; padding:2rem; text-align:center;">
-            <h3 style="margin-bottom: 1.5rem; font-weight:700;">输入二级密码</h3>
-            <input type="password" id="secPwdInput" placeholder="请输入密码..." style="width:100%; padding:0.8rem; border:1px solid #EEE; border-radius:12px; margin-bottom:1.5rem; outline:none; font-family:inherit;">
-            <div style="display:flex; gap:1rem;">
-                <button class="action-btn" id="cancelSecPwdBtn" style="flex:1; justify-content:center;">取消</button>
-                <button class="primary-btn" id="confirmSecPwdBtn" style="flex:1; border-radius:12px;">确认</button>
+    <div class="modal" id="secPwdModal" style="z-index: 9999;">
+        <div class="modal-content" style="max-width: 320px; padding: 2.5rem 2rem; text-align: center; border-radius: 24px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); margin: 0 auto 1.5rem; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 style="margin-bottom: 0.5rem; font-weight: 800; font-size: 1.4rem; color: var(--text-main);">身份验证</h3>
+            <p style="margin-bottom: 2rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">请输入云端数据同步二级密码<br>只需验证一次</p>
+            
+            <input type="password" id="secPwdInput" placeholder="请输入密码..." style="width: 100%; padding: 1rem; background: rgba(0,0,0,0.03); border: 1px solid transparent; border-radius: 16px; margin-bottom: 2rem; outline: none; font-family: inherit; font-size: 1rem; text-align: center; transition: all 0.3s;" onfocus="this.style.background='#fff'; this.style.border='1px solid var(--primary-color)'; this.style.boxShadow='0 0 0 4px rgba(255,107,107,0.1)';" onblur="this.style.background='rgba(0,0,0,0.03)'; this.style.border='1px solid transparent'; this.style.boxShadow='none';">
+            
+            <div style="display: flex; gap: 1rem;">
+                <button class="action-btn" id="cancelSecPwdBtn" style="flex: 1; justify-content: center; border-radius: 16px; padding: 1rem; font-weight: 600; background: rgba(0,0,0,0.05); color: var(--text-main); border: none;">取消</button>
+                <button class="primary-btn" id="confirmSecPwdBtn" style="flex: 1; border-radius: 16px; padding: 1rem; font-weight: 600; border: none; box-shadow: 0 10px 20px rgba(255,107,107,0.3);">确认</button>
             </div>
         </div>
     </div>
