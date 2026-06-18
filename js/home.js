@@ -330,11 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(step.type === 'timer') typeName = `计时 ${step.timerSeconds}s`;
             else if(step.type === 'judge') typeName = '判断';
 
-            let stepNotes = (recipe.notes || []).filter(n => n.stepIndex === idx);
+            let stepNotes = (recipe.notes || []).filter(n => n.stepId === step.id);
             let notesHtml = stepNotes.map(n => `
-                <div style="margin-top: 0.8rem; padding: 0.8rem; background: rgba(0,0,0,0.03); border-radius: 12px; border-left: 3px solid var(--primary-color);">
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.3rem;"><i class="fa-solid fa-pen"></i> ${n.author} 的心得</div>
-                    <div style="font-size:0.95rem; color:var(--text-main);">${n.content}</div>
+                <div class="step-note-card">
+                    <div class="note-author"><i class="fa-solid fa-lightbulb"></i> ${n.author} 的心得</div>
+                    <div class="note-text">${n.content}</div>
                 </div>
             `).join('');
 
@@ -343,12 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="step-line"></div>
                     <div class="step-dot"></div>
                     <div class="step-content">
-                        <div class="step-header" style="justify-content: space-between;">
-                            <div style="display:flex; align-items:center; gap:0.8rem;">
-                                <span class="step-num">Step ${idx + 1}</span>
-                                <span class="step-tag">${typeName}</span>
-                            </div>
-                            <button onclick="window.addStepNote('${recipe.id}', ${idx})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-plus"></i> 心得</button>
+                        <div class="step-header">
+                            <span class="step-num">Step ${idx + 1}</span>
+                            <span class="step-tag">${typeName}</span>
                         </div>
                         <p class="step-text">${step.content}</p>
                         ${mediaHtml}
@@ -364,19 +361,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <img src="${recipe.coverUrl}" class="detail-cover" alt="cover">
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.name}</h2>
-                <div class="detail-meta" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div class="detail-meta">
                     <div class="recipe-author-lg">
                         <img src="${authorAvatar}" alt="author">
                         <span class="author-name">${recipe.author}</span>
                         <span class="meta-date">${recipe.createTime}</span>
-                    </div>
-                    <div style="display:flex; gap: 0.6rem;">
-                        <button onclick="window.markCooked('${recipe.id}')" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: none; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; cursor: pointer;">
-                            <i class="fa-solid fa-fire-burner"></i> 做过 (${userCookedCount})
-                        </button>
-                        <button onclick="window.openEditModal('${recipe.id}')" style="background: rgba(0, 0, 0, 0.05); color: var(--text-main); border: none; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; cursor: pointer;">
-                            <i class="fa-solid fa-pen-to-square"></i> 编辑
-                        </button>
                     </div>
                 </div>
                 
@@ -398,6 +387,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${stepsHtml}
                     </div>
                 </div>
+            </div>
+            
+            <div class="recipe-action-bar">
+                <button class="action-btn primary" onclick="window.markCooked('${recipe.id}')">
+                    <i class="fa-solid fa-fire-burner"></i>
+                    <span>做过 (${userCookedCount})</span>
+                </button>
+                <button class="action-btn" onclick="alert('编辑功能开发中')">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>编辑</span>
+                </button>
+                <button class="action-btn" onclick="alert('笔记功能开发中')">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>笔记</span>
+                </button>
             </div>
         `;
         
