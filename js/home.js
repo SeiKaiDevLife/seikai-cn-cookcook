@@ -12,6 +12,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const searchInput = document.getElementById('searchInput');
+    const sortBtn = document.getElementById('sortBtn');
+    
+    // OSS Helpers
+    const ENCRYPTED_CREDENTIALS = "REPLACE_ME_WITH_ENCRYPTED_CREDENTIALS";
+    let ossClient = null;
+    
+    window.getOSSUrl = function(url, type) {
+        if (!url || !url.startsWith('public/')) return url;
+        if (url.includes('/videos/raw/')) {
+            url = url.replace('/videos/raw/', '/videos/compass/');
+        }
+        let baseUrl = 'https://www-seikai.oss-cn-hangzhou.aliyuncs.com/cookcook/' + url;
+        if (type === 'avatar') {
+            return baseUrl + '?x-oss-process=image/resize,w_100,m_lfit';
+        } else if (type === 'cover_small') {
+            return baseUrl + '?x-oss-process=image/resize,w_300,m_lfit';
+        } else if (type === 'cover_large') {
+            return baseUrl + '?x-oss-process=image/resize,w_800,m_lfit';
+        } else if (type === 'tutorial_img') {
+            return baseUrl + '?x-oss-process=image/resize,w_800,m_lfit';
+        }
+        return baseUrl;
+    };
     const sortDropdown = document.getElementById('sortDropdown');
     const sortTrigger = document.getElementById('sortTrigger');
     const sortMenuItems = document.querySelectorAll('.dropdown-item');
@@ -101,7 +124,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Load Data
-    let recipes = window.RECIPE_DATA || [];
+    let recipes = [];
+    
+    // Fetch recipes from OSS
+    fetch('https://www-seikai.oss-cn-hangzhou.aliyuncs.com/cookcook/public/data/recipes.json?t=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            recipes = data;
+            if(window.renderGrid) window.renderGrid();
+            if(document.getElementById('profileView').classList.contains('active')) {
+                renderProfile();
+            }
+        })
+        .catch(err => {
+            console.error("无法从OSS拉取数据，使用本地回退", err);
+            recipes = window.RECIPE_DATA || [];
+            if(window.renderGrid) window.renderGrid();
+        });
     
     // State
     let currentSortMode = 'time'; // time, difficulty, duration, proficiency
@@ -228,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `<button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-plus"></i></button>`
                 }
                 <div class="match-list-left">
-                    <img src="${recipe.coverUrl}" alt="${recipe.name}">
+                    <img src="${window.getOSSUrl(recipe.coverUrl, 'cover_small')}" alt="${recipe.name}">
                 </div>
                 <div class="match-list-right">
                     <h3 class="match-list-title">${recipe.name}</h3>
@@ -249,7 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let pubSteps = [];
     let pubIngList = [];
     let pubSeasList = [];
+    
+    let pubCoverFile = null;
     let pubCoverUrl = '';
+    
+    let pubTutorialFiles = [];
     let pubTutorialUrls = [];
     let pubTutorialType = 'image';
     let editingRecipeId = null;
@@ -257,35 +300,33 @@ document.addEventListener('DOMContentLoaded', () => {
     window.handleCoverUpload = function(event) {
         const file = event.target.files[0];
         if (file) {
+            pubCoverFile = file;
             pubCoverUrl = URL.createObjectURL(file);
             document.getElementById('pubCoverUpload').style.display = 'none';
             let preview = document.getElementById('pubCoverPreview');
-            preview.src = pubCoverUrl;
             preview.style.display = 'block';
+            preview.src = pubCoverUrl;
         }
     };
-    
+
     window.handleTutorialUpload = function(event) {
         const files = Array.from(event.target.files);
         if (files.length > 0) {
             pubTutorialType = files[0].type.startsWith('video') ? 'video' : 'image';
-            files.forEach(file => {
-                let url = URL.createObjectURL(file);
+            pubTutorialFiles = [];
+            pubTutorialUrls = [];
+            document.getElementById('pubTutorialPreview').innerHTML = '';
+            
+            files.forEach(f => {
+                pubTutorialFiles.push(f);
+                let url = URL.createObjectURL(f);
                 pubTutorialUrls.push(url);
-                let el;
-                if (file.type.startsWith('video')) {
-                    el = document.createElement('video');
-                    el.src = url;
-                    el.controls = true;
-                } else {
-                    el = document.createElement('img');
-                    el.src = url;
-                }
-                el.style.width = '100px';
-                el.style.height = '100px';
+                let el = document.createElement(pubTutorialType === 'video' ? 'video' : 'img');
+                el.src = url;
+                el.style.width = '80px';
+                el.style.height = '80px';
                 el.style.objectFit = 'cover';
-                el.style.borderRadius = '8px';
-                el.style.flexShrink = '0';
+                el.style.borderRadius = '10px';
                 document.getElementById('pubTutorialPreview').appendChild(el);
             });
         }
@@ -498,111 +539,168 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.submitRecipe = function() {
-        let pwd = prompt("请输入二级密码以确认" + (editingRecipeId ? "修改" : "发布") + "（提示：123456）：");
-        if (pwd !== "123456") {
-            alert("二级密码错误！");
+        let secPwdModal = document.getElementById('secPwdModal');
+        document.getElementById('secPwdInput').value = '';
+        secPwdModal.classList.add('show');
+        secPwdModal.style.display = 'flex';
+    };
+    
+    document.getElementById('cancelSecPwdBtn').addEventListener('click', () => {
+        let secPwdModal = document.getElementById('secPwdModal');
+        secPwdModal.classList.remove('show');
+        setTimeout(() => { secPwdModal.style.display = 'none'; }, 300);
+    });
+    
+    document.getElementById('confirmSecPwdBtn').addEventListener('click', async () => {
+        let pwd = document.getElementById('secPwdInput').value;
+        if (!pwd) return;
+        
+        // Initialize OSS
+        if (!ENCRYPTED_CREDENTIALS || ENCRYPTED_CREDENTIALS === "REPLACE_ME_WITH_ENCRYPTED_CREDENTIALS") {
+            alert("未配置OSS凭证！");
             return;
         }
         
+        try {
+            const decryptedBytes = CryptoJS.AES.decrypt(ENCRYPTED_CREDENTIALS, pwd);
+            const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+            if (!decryptedText) throw new Error("解密失败");
+            
+            const credentials = JSON.parse(decryptedText);
+            ossClient = new OSS({
+                region: 'oss-cn-hangzhou',
+                accessKeyId: credentials.id.trim(),
+                accessKeySecret: credentials.secret.trim(),
+                bucket: 'www-seikai'
+            });
+        } catch (err) {
+            alert("二级密码错误或解密失败！");
+            console.error(err);
+            return;
+        }
+        
+        // --- REAL SUBMIT LOGIC ---
         let name = document.getElementById('pubName').value.trim();
-        let cover = pubCoverUrl || 'public/images/covers/recipe_001.webp';
         let diff = parseInt(document.getElementById('pubDiff').value) || 3;
         let dur = parseInt(document.getElementById('pubDur').value) || 15;
         
         if (!name) { alert("菜谱名称不能为空！"); return; }
         
-        let newIngs = [...pubIngList];
-        let newSeas = [...pubSeasList];
-        
-        if (editingRecipeId) {
-            let oldRecipe = recipes.find(x => x.id === editingRecipeId);
-            if (oldRecipe) {
-                // Check affected notes
-                let hasAffectedNotes = false;
-                if (oldRecipe.notes && oldRecipe.notes.length > 0) {
-                    for (let note of oldRecipe.notes) {
-                        let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
-                        let newStep = pubSteps.find(s => s.id === note.stepId);
-                        if (!newStep || (oldStep && oldStep.content !== newStep.content)) {
-                            hasAffectedNotes = true;
-                            break;
+        let publishBtn = document.getElementById('confirmSecPwdBtn');
+        let originalText = publishBtn.innerText;
+        publishBtn.innerText = "上传中...";
+        publishBtn.disabled = true;
+
+        try {
+            // Upload Cover
+            let finalCoverUrl = pubCoverUrl || 'public/images/covers/recipe_001.webp';
+            if (pubCoverFile) {
+                let ext = pubCoverFile.name.split('.').pop();
+                let ossName = `public/covers/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                await ossClient.put(ossName, pubCoverFile);
+                finalCoverUrl = ossName;
+            }
+
+            // Upload Tutorials
+            let finalTutorialUrls = [];
+            for (let i = 0; i < pubTutorialFiles.length; i++) {
+                let f = pubTutorialFiles[i];
+                let ext = f.name.split('.').pop();
+                let isVideo = f.type.startsWith('video');
+                let dir = isVideo ? 'public/videos/raw/' : 'public/tutorials/';
+                let ossName = `${dir}${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                await ossClient.put(ossName, f);
+                finalTutorialUrls.push(ossName);
+            }
+            
+            // For editing, keep existing tutorials if not changed (pubTutorialUrls without blob)
+            if (pubTutorialFiles.length === 0 && pubTutorialUrls.length > 0) {
+                finalTutorialUrls = [...pubTutorialUrls]; // keep existing
+            }
+
+            let newIngs = [...pubIngList];
+            let newSeas = [...pubSeasList];
+            
+            if (editingRecipeId) {
+                let oldRecipe = recipes.find(x => x.id === editingRecipeId);
+                if (oldRecipe) {
+                    // Check affected notes
+                    let hasAffectedNotes = false;
+                    if (oldRecipe.notes && oldRecipe.notes.length > 0) {
+                        for (let note of oldRecipe.notes) {
+                            let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
+                            let newStep = pubSteps.find(s => s.id === note.stepId);
+                            if (!newStep || (oldStep && oldStep.content !== newStep.content)) {
+                                hasAffectedNotes = true;
+                                break;
+                            }
                         }
                     }
-                }
-                
-                if (hasAffectedNotes) {
-                    let choice = confirm("您修改或删除了部分包含笔记的步骤。点击“确定”一并删除这些失效笔记，点击“取消”暂时保留。您可以稍后在【笔记】页面中手动修改它们。");
-                    if (choice) {
-                        oldRecipe.notes = oldRecipe.notes.filter(note => {
-                            let newStep = pubSteps.find(s => s.id === note.stepId);
-                            let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
-                            return newStep && (!oldStep || oldStep.content === newStep.content);
-                        });
+                    
+                    if (hasAffectedNotes) {
+                        let choice = confirm("您修改或删除了部分包含笔记的步骤。点击“确定”一并删除这些失效笔记，点击“取消”暂时保留。您可以稍后在【笔记】页面中手动修改它们。");
+                        if (choice) {
+                            oldRecipe.notes = oldRecipe.notes.filter(note => {
+                                let newStep = pubSteps.find(s => s.id === note.stepId);
+                                let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
+                                return newStep && (!oldStep || oldStep.content === newStep.content);
+                            });
+                        }
+                    }
+                    
+                    // Update
+                    oldRecipe.name = name;
+                    oldRecipe.coverUrl = finalCoverUrl;
+                    oldRecipe.difficulty = diff;
+                    oldRecipe.durationMin = dur;
+                    oldRecipe.materials.ingredients = newIngs;
+                    oldRecipe.materials.seasonings = newSeas;
+                    oldRecipe.steps = JSON.parse(JSON.stringify(pubSteps));
+                    if (finalTutorialUrls.length > 0) {
+                        oldRecipe.tutorials = { type: pubTutorialType, urls: [...finalTutorialUrls] };
+                    } else {
+                        oldRecipe.tutorials = null;
                     }
                 }
-                
-                // Update
-                oldRecipe.name = name;
-                oldRecipe.coverUrl = cover;
-                oldRecipe.difficulty = diff;
-                oldRecipe.durationMin = dur;
-                oldRecipe.materials.ingredients = newIngs;
-                oldRecipe.materials.seasonings = newSeas;
-                oldRecipe.steps = JSON.parse(JSON.stringify(pubSteps));
-                if (pubTutorialUrls.length > 0) {
-                    oldRecipe.tutorials = { type: pubTutorialType, urls: [...pubTutorialUrls] };
-                } else {
-                    oldRecipe.tutorials = null;
-                }
-                alert("修改成功！(数据仅在本次刷新前有效)");
+            } else {
+                let newRecipe = {
+                    id: 'recipe_' + Date.now(),
+                    name: name,
+                    coverUrl: finalCoverUrl,
+                    author: userStr,
+                    createTime: new Date().toISOString().split('T')[0] + " 12:00:00",
+                    difficulty: diff,
+                    durationMin: dur,
+                    cookedStats: {},
+                    materials: { ingredients: newIngs, seasonings: newSeas },
+                    steps: pubSteps,
+                    tutorials: finalTutorialUrls.length > 0 ? { type: pubTutorialType, urls: finalTutorialUrls } : null,
+                    notes: []
+                };
+                recipes.unshift(newRecipe);
             }
-        } else {
-            let newRecipe = {
-                id: 'recipe_' + Date.now(),
-                name: name,
-                coverUrl: cover,
-                author: userStr,
-                createTime: new Date().toISOString().split('T')[0] + " 12:00:00",
-                difficulty: diff,
-                durationMin: dur,
-                cookedStats: {},
-                materials: { ingredients: newIngs, seasonings: newSeas },
-                steps: pubSteps,
-                tutorials: pubTutorialUrls.length > 0 ? { type: pubTutorialType, urls: pubTutorialUrls } : null,
-                notes: []
-            };
-            recipes.unshift(newRecipe);
-            alert("发布成功！(数据仅在本次刷新前有效)");
+            
+            // SAVE TO OSS
+            const jsonStr = JSON.stringify(recipes, null, 2);
+            const blob = new Blob([jsonStr], {type: 'application/json'});
+            await ossClient.put('public/data/recipes.json', blob);
+
+            alert((editingRecipeId ? "修改" : "发布") + "成功！数据已持久化至云端。");
+            
+            // Return to home view
+            document.querySelector('.tab-item[data-view="homeView"]').click();
+            
+            // Reset form
+            window.resetPublishForm();
+            window.renderGrid();
+        } catch (err) {
+            console.error(err);
+            alert("上传失败！" + err.message);
+        } finally {
+            publishBtn.innerText = originalText;
+            publishBtn.disabled = false;
         }
-        
-        // Return to home view
-        document.querySelector('.tab-item[data-view="homeView"]').click();
-        
-        // Reset form
-        editingRecipeId = null;
-        let pubBtn = document.getElementById('publishBtn');
-        if(pubBtn) pubBtn.innerText = '发布菜谱';
-        
-        document.getElementById('pubName').value = '';
-        pubCoverUrl = '';
-        pubTutorialUrls = [];
-        document.getElementById('pubCoverUpload').style.display = 'flex';
-        document.getElementById('pubCoverPreview').style.display = 'none';
-        document.getElementById('pubCoverPreview').src = '';
-        document.getElementById('pubTutorialPreview').innerHTML = '';
-        if(document.getElementById('pubIngName')) document.getElementById('pubIngName').value = '';
-        if(document.getElementById('pubIngAmount')) document.getElementById('pubIngAmount').value = '';
-        if(document.getElementById('pubSeasInput')) document.getElementById('pubSeasInput').value = '';
-        
-        pubIngList = [];
-        pubSeasList = [];
-        pubSteps = [];
-        renderPubIngTags();
-        renderPubSeasTags();
-        renderPubSteps();
-        
-        window.renderGrid();
-    };
+    });
 
     // Render Grid
     function renderGrid() {
@@ -666,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.innerHTML = `
                 <div class="recipe-cover-wrap">
-                    <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
+                    <img src="${window.getOSSUrl(recipe.coverUrl, 'cover_small')}" alt="${recipe.name}" class="recipe-cover">
                     <div class="cover-duration"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</div>
                 </div>
                 <div class="recipe-info">
@@ -679,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="recipe-meta">
                         <div class="recipe-author">
-                            <img src="${authorAvatar}" alt="author">
+                            <img src="${window.getOSSUrl(authorAvatar, 'avatar')}" alt="author">
                             <span>${recipe.author.charAt(0).toUpperCase() + recipe.author.slice(1)}</span>
                         </div>
                         <div class="recipe-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
@@ -957,9 +1055,9 @@ document.addEventListener('DOMContentLoaded', () => {
             recipe.tutorials.urls.forEach(url => {
                 let isVideo = recipe.tutorials.type === 'video' || url.endsWith('.mp4') || (url.startsWith('blob:') && recipe.tutorials.type === 'video');
                 if (isVideo) {
-                    tutorialsHtml += `<video controls class="carousel-media" src="${url}"></video>`;
+                    tutorialsHtml += `<video controls class="carousel-media" src="${window.getOSSUrl(url, 'tutorial_video')}"></video>`;
                 } else {
-                    tutorialsHtml += `<img class="carousel-media" src="${url}" alt="tutorial">`;
+                    tutorialsHtml += `<img class="carousel-media" src="${window.getOSSUrl(url, 'tutorial_img')}" alt="tutorial">`;
                 }
             });
             tutorialsHtml += `</div>
@@ -972,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let stepsHtml = recipe.steps?.map((step, idx) => {
             let mediaHtml = step.media ? 
-                (step.media.endsWith('.mp4') ? `<video controls class="step-inline-media" src="${step.media}"></video>` : `<img class="step-inline-media" src="${step.media}" alt="step media">`) 
+                (step.media.endsWith('.mp4') ? `<video controls class="step-inline-media" src="${window.getOSSUrl(step.media, 'tutorial_video')}"></video>` : `<img class="step-inline-media" src="${window.getOSSUrl(step.media, 'tutorial_img')}" alt="step media">`) 
                 : '';
             
             let typeName = '';
@@ -1010,12 +1108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let userCookedCount = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
 
         recipeDetailContainer.innerHTML = `
-            <img src="${recipe.coverUrl}" class="detail-cover" alt="cover">
+            <img src="${window.getOSSUrl(recipe.coverUrl, 'cover_large')}" class="detail-cover" alt="cover">
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.name}</h2>
                 <div class="detail-meta">
                     <div class="recipe-author-lg">
-                        <img src="${authorAvatar}" alt="author">
+                        <img src="${window.getOSSUrl(authorAvatar, 'avatar')}" alt="author">
                         <span class="author-name">${recipe.author.charAt(0).toUpperCase() + recipe.author.slice(1)}</span>
                         <span class="meta-date">${recipe.createTime}</span>
                     </div>
@@ -1095,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (r) {
                         html += `
                             <div class="cart-item-mini">
-                                <img src="${r.coverUrl}">
+                                <img src="${window.getOSSUrl(r.coverUrl, 'cover_small')}">
                                 <span class="cart-item-mini-name">${r.name}</span>
                                 <button class="cart-item-mini-del" onclick="window.removeFromCart('${r.id}')"><i class="fa-solid fa-xmark"></i></button>
                             </div>
@@ -1151,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `
                     <div class="order-item">
                         <div style="font-weight:800; color:var(--text-muted); width:20px;">${idx+1}</div>
-                        <img src="${r.coverUrl}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                        <img src="${window.getOSSUrl(r.coverUrl, 'cover_small')}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
                         <div style="font-weight:700; flex:1;">${r.name}</div>
                         <div class="order-controls">
                             <button onclick="window.moveOrder(${idx}, -1)" ${idx===0?'style="opacity:0.3;"':''}><i class="fa-solid fa-chevron-up"></i></button>
@@ -1191,9 +1289,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 dish.recipe.tutorials.urls.forEach(url => {
                     let isVideo = dish.recipe.tutorials.type === 'video' || url.endsWith('.mp4');
                     if (isVideo) {
-                        tutorialsHtml += `<video controls autoplay class="carousel-media" src="${url}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;"></video>`;
+                        tutorialsHtml += `<video controls autoplay class="carousel-media" src="${window.getOSSUrl(url, 'tutorial_video')}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;"></video>`;
                     } else {
-                        tutorialsHtml += `<img class="carousel-media" src="${url}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;">`;
+                        tutorialsHtml += `<img class="carousel-media" src="${window.getOSSUrl(url, 'tutorial_img')}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;">`;
                     }
                 });
             }
@@ -1320,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = matches.slice(0, 5).map(r => `
             <div class="cart-item" style="padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
                 <div style="display:flex; align-items:center; gap:1rem;">
-                    <img src="${r.coverUrl}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
+                    <img src="${window.getOSSUrl(r.coverUrl, 'cover_small')}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
                     <div style="font-weight:600; font-size:0.95rem;">${r.name}</div>
                 </div>
                 <button class="add-to-cart-btn" onclick="window.addToCart('${r.id}'); document.getElementById('guideSearchInput').value=''; window.handleGuideSearch();"><i class="fa-solid fa-plus"></i></button>

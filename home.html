@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CookCook</title>
     <link rel="stylesheet" href="css/base.css?v=1.0.4">
-    <link rel="stylesheet" href="css/home.css?v=1.0.4">
+    <link rel="stylesheet" href="css/home.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.18.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="js/data.js?v=1.0.5"></script>
@@ -269,6 +271,20 @@
         </div>
     </div>
 
+    <!-- SecPwd Modal -->
+    <div class="modal" id="secPwdModal">
+        <div class="modal-content" style="max-width:300px; padding:2rem; text-align:center;">
+            <h3 style="margin-bottom: 1.5rem; font-weight:700;">输入二级密码</h3>
+            <input type="password" id="secPwdInput" placeholder="请输入密码..." style="width:100%; padding:0.8rem; border:1px solid #EEE; border-radius:12px; margin-bottom:1.5rem; outline:none; font-family:inherit;">
+            <div style="display:flex; gap:1rem;">
+                <button class="action-btn" id="cancelSecPwdBtn" style="flex:1; justify-content:center;">取消</button>
+                <button class="primary-btn" id="confirmSecPwdBtn" style="flex:1; border-radius:12px;">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data & App -->
+    <script src="js/data.js"></script>
     <script src="js/home.js?v=1.0.4"></script>
 </body>
 </html>
