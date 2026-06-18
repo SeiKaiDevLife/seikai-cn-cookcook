@@ -121,6 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(i < recipe.difficulty) starsHtml += '<i class="fa-solid fa-star"></i>';
                 else starsHtml += '<i class="fa-regular fa-star"></i>';
             }
+            
+            let myCooked = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
+            let cookedHtml = `<span style="margin-left: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-fire-burner"></i> 做过 ${myCooked} 次</span>`;
 
             let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
 
@@ -136,8 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <img src="${authorAvatar}" alt="author">
                             <span>${recipe.author}</span>
                         </div>
-                        <div class="recipe-stats">
-                            ${starsHtml}
+                        <div class="recipe-stats" style="display: flex; align-items: center;">
+                            <div>${starsHtml}</div>
+                            ${cookedHtml}
                         </div>
                     </div>
                 </div>
@@ -355,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let cookedCount = 0;
         let cookedDuration = 0;
         let publishedCount = 0;
+        let notesCount = 0;
         
         recipes.forEach(r => {
             if (r.author === userStr) {
@@ -364,6 +369,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let times = r.cookedStats[userStr];
                 cookedCount += times;
                 cookedDuration += times * (r.durationMin || 0);
+            }
+            if (r.notes) {
+                notesCount += r.notes.filter(n => n.author === userStr).length;
             }
         });
         
@@ -375,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('statCooked').innerText = cookedCount;
         document.getElementById('statDuration').innerText = timeStr;
         document.getElementById('statPublished').innerText = publishedCount;
+        document.getElementById('statNotes').innerText = notesCount;
     }
 
     function openDetail(recipe) {
