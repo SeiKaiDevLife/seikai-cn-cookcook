@@ -62,8 +62,28 @@
         </div>
         
         <div id="profileView" class="view-section">
-            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                <h2>个人中心开发中...</h2>
+            <div class="profile-header">
+                <img id="profileAvatar" src="public/images/avatars/seikai.webp" alt="avatar">
+                <h2 id="profileName">Username</h2>
+            </div>
+            
+            <div class="profile-stats">
+                <div class="stat-card">
+                    <div class="stat-val" id="statCooked">0</div>
+                    <div class="stat-label">做菜总次数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statDuration">0h</div>
+                    <div class="stat-label">总时长</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statPublished">0</div>
+                    <div class="stat-label">发布菜谱</div>
+                </div>
+            </div>
+            
+            <div class="profile-actions">
+                <button class="logout-btn" onclick="window.logout()">退出登录</button>
             </div>
         </div>
     </main>

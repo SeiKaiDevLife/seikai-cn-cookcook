@@ -49,8 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Only show top bar on home view
             if (targetViewId === 'homeView') {
                 topBar.style.display = 'flex';
+                renderGrid();
             } else {
                 topBar.style.display = 'none';
+            }
+
+            if (targetViewId === 'profileView') {
+                renderProfile();
             }
         });
     });
@@ -337,6 +342,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    
+    window.logout = function() {
+        localStorage.removeItem('cookcook_user');
+        window.location.href = 'index.html';
+    };
+    
+    function renderProfile() {
+        document.getElementById('profileName').innerText = userStr;
+        document.getElementById('profileAvatar').src = userStr === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
+        
+        let cookedCount = 0;
+        let cookedDuration = 0;
+        let publishedCount = 0;
+        
+        recipes.forEach(r => {
+            if (r.author === userStr) {
+                publishedCount++;
+            }
+            if (r.cookedStats && r.cookedStats[userStr]) {
+                let times = r.cookedStats[userStr];
+                cookedCount += times;
+                cookedDuration += times * (r.durationMin || 0);
+            }
+        });
+        
+        let hrs = Math.floor(cookedDuration / 60);
+        let mins = cookedDuration % 60;
+        let timeStr = hrs > 0 ? `${hrs}h${mins}m` : `${mins}m`;
+        if(cookedDuration === 0) timeStr = '0m';
+        
+        document.getElementById('statCooked').innerText = cookedCount;
+        document.getElementById('statDuration').innerText = timeStr;
+        document.getElementById('statPublished').innerText = publishedCount;
+    }
 
     function openDetail(recipe) {
         let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
