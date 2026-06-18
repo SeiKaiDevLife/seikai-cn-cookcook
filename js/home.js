@@ -253,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pubIngName = document.getElementById('pubIngName');
     const pubIngAmount = document.getElementById('pubIngAmount');
+    const pubIngUnit = document.getElementById('pubIngUnit');
     const addPubIngBtn = document.getElementById('addPubIngBtn');
     const pubIngTagsContainer = document.getElementById('pubIngTagsContainer');
 
@@ -262,12 +263,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPubIngTags() {
         if (!pubIngTagsContainer) return;
-        pubIngTagsContainer.innerHTML = pubIngList.map((ingObj, idx) => `
+        pubIngTagsContainer.innerHTML = pubIngList.map((ingObj, idx) => {
+            let text = ingObj.amount ? `${ingObj.name} ${ingObj.amount}` : ingObj.name;
+            return `
             <div class="ing-tag" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2);">
-                ${ingObj.name} ${ingObj.amount}
+                ${text}
                 <i class="fa-solid fa-xmark" style="color: #059669;" onclick="window.removePubIng(${idx})"></i>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function renderPubSeasTags() {
@@ -293,7 +297,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addPubIngBtn && pubIngName && pubIngAmount) {
         addPubIngBtn.addEventListener('click', () => {
             let name = pubIngName.value.trim();
-            let amount = pubIngAmount.value.trim();
+            let amountVal = pubIngAmount.value.trim();
+            let unit = pubIngUnit ? pubIngUnit.value : '';
+            let amount = amountVal ? amountVal + unit : (unit === '适量' ? '适量' : '');
+            
             if (name) {
                 pubIngList.push({ name: name, amount: amount });
                 pubIngName.value = '';
@@ -773,16 +780,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let tutorialsHtml = '';
         if (recipe.tutorials && recipe.tutorials.urls && recipe.tutorials.urls.length > 0) {
             tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3>
-                <div class="tutorial-scroll-container">
-                    <div class="tutorial-scroll">`;
+                <div class="carousel-container">
+                    ${recipe.tutorials.urls.length > 1 ? `<button class="carousel-btn left" onclick="window.scrollCarousel(-1)"><i class="fa-solid fa-chevron-left"></i></button>` : ''}
+                    <div class="tutorial-scroll" id="detailCarousel" onscroll="window.updateCarouselDots()">`;
             recipe.tutorials.urls.forEach(url => {
-                if (recipe.tutorials.type === 'video') {
-                    tutorialsHtml += `<video controls class="step-media" src="${url}"></video>`;
+                let isVideo = recipe.tutorials.type === 'video' || url.endsWith('.mp4') || (url.startsWith('blob:') && recipe.tutorials.type === 'video');
+                if (isVideo) {
+                    tutorialsHtml += `<video controls class="carousel-media" src="${url}"></video>`;
                 } else {
-                    tutorialsHtml += `<img class="step-media" src="${url}" alt="tutorial">`;
+                    tutorialsHtml += `<img class="carousel-media" src="${url}" alt="tutorial">`;
                 }
             });
-            tutorialsHtml += `</div></div></div>`;
+            tutorialsHtml += `</div>
+                    ${recipe.tutorials.urls.length > 1 ? `<button class="carousel-btn right" onclick="window.scrollCarousel(1)"><i class="fa-solid fa-chevron-right"></i></button>` : ''}
+                    ${recipe.tutorials.urls.length > 1 ? `<div class="carousel-dots" id="carouselDots">
+                        ${recipe.tutorials.urls.map((_, i) => `<span class="dot ${i===0?'active':''}"></span>`).join('')}
+                    </div>` : ''}
+                </div></div>`;
         }
 
         let stepsHtml = recipe.steps?.map((step, idx) => {
@@ -880,4 +894,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial render
     renderGrid();
+    
+    // Carousel Logic
+    window.scrollCarousel = function(dir) {
+        const carousel = document.getElementById('detailCarousel');
+        if (!carousel) return;
+        const width = carousel.clientWidth;
+        carousel.scrollBy({ left: dir * width, behavior: 'smooth' });
+    };
+
+    window.updateCarouselDots = function() {
+        const carousel = document.getElementById('detailCarousel');
+        const dotsContainer = document.getElementById('carouselDots');
+        if (!carousel || !dotsContainer) return;
+        
+        let index = Math.round(carousel.scrollLeft / carousel.clientWidth);
+        let dots = dotsContainer.querySelectorAll('.dot');
+        dots.forEach((d, i) => {
+            if (i === index) d.classList.add('active');
+            else d.classList.remove('active');
+        });
+    };
 });

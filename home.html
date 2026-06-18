@@ -95,9 +95,21 @@
                     
                     <div class="form-group">
                         <label>添加食材</label>
-                        <div class="ing-input-group">
-                            <input type="text" id="pubIngName" placeholder="名称 (如：西红柿)" style="flex: 2;">
-                            <input type="text" id="pubIngAmount" placeholder="用量 (如：2个)" style="flex: 1;">
+                        <input type="text" id="pubIngName" placeholder="名称 (如：西红柿)">
+                        <div class="ing-input-group" style="margin-top: 0.5rem;">
+                            <input type="number" id="pubIngAmount" placeholder="数量" style="flex: 2;" min="0" step="0.1">
+                            <select id="pubIngUnit" style="flex: 1.5; padding: 1rem; border-radius: 16px; border: 1px solid var(--glass-border); background: #FAFAFA; font-size: 1rem; outline: none; box-shadow: var(--shadow-sm);">
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="个">个</option>
+                                <option value="勺">勺</option>
+                                <option value="把">把</option>
+                                <option value="根">根</option>
+                                <option value="片">片</option>
+                                <option value="块">块</option>
+                                <option value="适量">适量</option>
+                            </select>
                             <button id="addPubIngBtn"><i class="fa-solid fa-plus"></i></button>
                         </div>
                         <div class="ing-tags" id="pubIngTagsContainer" style="margin-top: 0.5rem;">
