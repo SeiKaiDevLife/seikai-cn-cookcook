@@ -297,25 +297,57 @@
 }
 
 .ingredient-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
 }
 
 .ingredient-item {
     display: flex;
-    justify-content: space-between;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.8rem 1rem;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.6rem 1rem;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
 }
 
+.ingredient-item .amount {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Step Colors */
 .step-item {
     margin-bottom: 1.5rem;
-    background: rgba(255, 255, 255, 0.02);
     padding: 1.5rem;
     border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    color: #fff;
+}
+
+/* 备菜步骤 (绿色) */
+.step-item.type-prep {
+    background: rgba(16, 185, 129, 0.15);
+    border-left: 4px solid #10b981;
+}
+
+/* 烧菜步骤 (红色) */
+.step-item.type-cook {
+    background: rgba(239, 68, 68, 0.15);
+    border-left: 4px solid #ef4444;
+}
+
+/* 计时步骤 (蓝色) */
+.step-item.type-timer {
+    background: rgba(59, 130, 246, 0.15);
+    border-left: 4px solid #3b82f6;
+}
+
+/* 判断步骤 (黄色) */
+.step-item.type-judge {
+    background: rgba(245, 158, 11, 0.15);
+    border-left: 4px solid #f59e0b;
 }
 
 .step-item p {

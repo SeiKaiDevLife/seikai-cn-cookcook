@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    const user = JSON.parse(userStr);
-    document.getElementById('userName').textContent = user.name;
-    document.getElementById('userAvatar').src = user.avatar;
+    const currentUser = JSON.parse(userStr);
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userAvatar').src = currentUser.avatar;
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let filtered = recipes.filter(r => r.title.includes(searchQuery) || r.description.includes(searchQuery));
         
         if (currentSort === 'time') {
-            filtered.sort((a, b) => new Date(b.stats.date) - new Date(a.stats.date));
+            filtered.sort((a, b) => b.createTime - a.createTime);
         } else if (currentSort === 'hot') {
-            filtered.sort((a, b) => b.stats.views - a.stats.views);
+            // Placeholder: no actual hotness data in Phase 1 as per requirements
         }
 
         recipeGrid.innerHTML = '';
@@ -47,18 +47,28 @@ document.addEventListener('DOMContentLoaded', () => {
         filtered.forEach(recipe => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
+            
+            // Generate difficulty stars
+            let starsHtml = '';
+            for (let i = 0; i < recipe.difficulty; i++) {
+                starsHtml += '<i class="fa-solid fa-star" style="color: #f59e0b;"></i>';
+            }
+
+            // Default avatars for hardcoded users
+            let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
+
             card.innerHTML = `
-                <img src="${recipe.cover}" alt="${recipe.title}" class="recipe-cover">
+                <img src="${recipe.coverUrl}" alt="${recipe.title}" class="recipe-cover">
                 <div class="recipe-info">
                     <h3 class="recipe-title">${recipe.title}</h3>
                     <p class="recipe-desc">${recipe.description}</p>
                     <div class="recipe-meta">
                         <div class="recipe-author">
-                            <img src="${recipe.author.avatar}" alt="author">
-                            <span>${recipe.author.name}</span>
+                            <img src="${authorAvatar}" alt="author">
+                            <span>${recipe.author}</span>
                         </div>
                         <div class="recipe-stats">
-                            <i class="fa-solid fa-eye"></i> ${recipe.stats.views}
+                            ${starsHtml} <span style="margin-left: 0.5rem;"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</span>
                         </div>
                     </div>
                 </div>
@@ -85,46 +95,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal logic
     function openRecipe(recipe) {
-        let ingredientsHtml = recipe.ingredients.map(ing => `
-            <div class="ingredient-item">
-                <span>${ing.name}</span>
-                <span>${ing.amount}</span>
-            </div>
-        `).join('');
+        let ingredientsHtml = '';
+        if (recipe.materials && recipe.materials.ingredients) {
+            ingredientsHtml += recipe.materials.ingredients.map(ing => `
+                <div class="ingredient-item">
+                    <span>${ing.name}</span>
+                    <span class="amount">${ing.amount}</span>
+                </div>
+            `).join('');
+        }
+
+        let seasoningsHtml = '';
+        if (recipe.materials && recipe.materials.seasonings) {
+            seasoningsHtml += recipe.materials.seasonings.map(s => `
+                <div class="ingredient-item">
+                    <span>${s}</span>
+                </div>
+            `).join('');
+        }
+
+        const typeLabels = {
+            'prep': '备菜',
+            'cook': '烧菜',
+            'timer': '计时',
+            'judge': '判断'
+        };
 
         let stepsHtml = recipe.steps.map((step, idx) => {
             let mediaHtml = '';
-            if (step.type === 'image') {
-                mediaHtml = `<img src="${step.media}" alt="Step ${idx+1}" class="step-media">`;
-            } else if (step.type === 'video') {
-                mediaHtml = `<video src="${step.media}" controls class="step-media"></video>`;
+            if (step.media) {
+                if (step.media.endsWith('.mp4')) {
+                    mediaHtml = `<video src="${step.media}" controls class="step-media"></video>`;
+                } else {
+                    mediaHtml = `<img src="${step.media}" alt="Step ${idx+1}" class="step-media">`;
+                }
             }
+            
+            let timerHtml = step.type === 'timer' && step.timerSeconds ? ` <span style="color: #60a5fa;"><i class="fa-regular fa-clock"></i> ${Math.floor(step.timerSeconds / 60)}分${step.timerSeconds % 60}秒</span>` : '';
+
             return `
-                <div class="step-item">
-                    <h4>步骤 ${idx + 1}</h4>
-                    <p>${step.content}</p>
+                <div class="step-item type-${step.type}">
+                    <h4>步骤 ${idx + 1} <span style="font-size: 0.8rem; font-weight: normal; margin-left: 0.5rem; opacity: 0.8;">[${typeLabels[step.type]}]</span></h4>
+                    <p>${step.content}${timerHtml}</p>
                     ${mediaHtml}
                 </div>
             `;
         }).join('');
 
+        let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
+
         recipeDetailContainer.innerHTML = `
-            ${recipe.video ? `<video src="${recipe.video}" controls class="detail-cover"></video>` : `<img src="${recipe.cover}" class="detail-cover">`}
+            <img src="${recipe.coverUrl}" class="detail-cover">
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.title}</h2>
                 <div class="detail-meta">
                     <div class="recipe-author">
-                        <img src="${recipe.author.avatar}" alt="author">
-                        <span>${recipe.author.name}</span>
+                        <img src="${authorAvatar}" alt="author">
+                        <span>${recipe.author}</span>
                     </div>
-                    <span><i class="fa-solid fa-fire"></i> 热度: ${recipe.stats.views}</span>
-                    <span><i class="fa-solid fa-calendar"></i> 发布于: ${new Date(recipe.stats.date).toLocaleDateString()}</span>
+                    <span><i class="fa-regular fa-clock"></i> 耗时: ${recipe.durationMin} 分钟</span>
+                    <span><i class="fa-solid fa-fire"></i> 难度: ${recipe.difficulty} 星</span>
                 </div>
                 
                 <div class="detail-section">
                     <h3>食材清单</h3>
                     <div class="ingredient-list">
                         ${ingredientsHtml}
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>所需佐料</h3>
+                    <div class="ingredient-list">
+                        ${seasoningsHtml}
                     </div>
                 </div>
                 
