@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortBtn = document.getElementById('sortBtn');
     
     // OSS Helpers
-    const ENCRYPTED_CREDENTIALS = "REPLACE_ME_WITH_ENCRYPTED_CREDENTIALS";
+    const ENCRYPTED_CREDENTIALS = "U2FsdGVkX1/O2LvdBfLLtIwzMjSiaU5wjjshpICsLCG9Ha8fwPaPQJnIne+ZSGHlmydtvi0g48RYERvodnmTkZnhXApS0IU7KoMNoL/CsLwWREf0qAAKh5ndFRa/uY/t";
     let ossClient = null;
     
     window.getOSSUrl = function(url, type) {
