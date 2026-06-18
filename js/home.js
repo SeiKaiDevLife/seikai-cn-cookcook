@@ -79,6 +79,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const ingTagsContainer = document.getElementById('ingTagsContainer');
     const matchRecipeGrid = document.getElementById('matchRecipeGrid');
 
+    const synonymDict = {
+        "猪肉": ["五花肉", "梅花肉", "里脊肉", "瘦肉", "排骨"],
+        "牛肉": ["牛腩", "牛排", "肥牛"],
+        "葱": ["大葱", "小葱", "洋葱"],
+        "辣椒": ["小米辣", "青椒", "红椒", "薄皮辣椒", "线椒", "朝天椒"],
+        "糖": ["白糖", "红糖", "冰糖"],
+        "油": ["食用油", "菜籽油", "花生油", "猪油", "橄榄油"],
+        "酱油": ["生抽", "老抽"],
+        "盐": ["食盐", "粗盐", "海盐"],
+        "蒜": ["大蒜", "蒜瓣", "蒜末"],
+        "姜": ["生姜", "老姜"]
+    };
+
+    function checkMatch(reqName, userIng) {
+        if (reqName.includes(userIng) || userIng.includes(reqName)) return true;
+        for (let key in synonymDict) {
+            let list = synonymDict[key];
+            if (userIng.includes(key) && list.some(item => reqName.includes(item))) return true;
+            if (reqName.includes(key) && list.some(item => userIng.includes(item))) return true;
+        }
+        return false;
+    }
+
     function renderIngTags() {
         if (!ingTagsContainer) return;
         ingTagsContainer.innerHTML = myIngredients.map((ing, idx) => `
@@ -122,18 +145,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let scoredRecipes = recipes.map(r => {
             let reqIngs = r.materials?.ingredients || [];
-            if (reqIngs.length === 0) return { recipe: r, score: 0, percent: 0 };
+            if (reqIngs.length === 0) return { recipe: r, score: 0, percent: 0, matched: [], missing: [] };
             
-            let matchCount = 0;
+            let matched = [];
+            let missing = [];
+            
             reqIngs.forEach(req => {
-                let isMatch = myIngredients.some(myIng => 
-                    req.name.includes(myIng) || myIng.includes(req.name)
-                );
-                if (isMatch) matchCount++;
+                let isMatch = myIngredients.some(myIng => checkMatch(req.name, myIng));
+                if (isMatch) matched.push(req.name);
+                else missing.push(req.name);
             });
             
-            let percent = Math.round((matchCount / reqIngs.length) * 100);
-            return { recipe: r, score: matchCount, percent: percent };
+            let percent = Math.round((matched.length / reqIngs.length) * 100);
+            return { recipe: r, score: matched.length, percent: percent, matched: matched, missing: missing };
         });
 
         scoredRecipes.sort((a, b) => b.percent - a.percent);
@@ -141,43 +165,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         matchRecipeGrid.innerHTML = '';
         if (scoredRecipes.length === 0) {
-            matchRecipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">暂无匹配菜谱，换些食材试试</div>';
+            matchRecipeGrid.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-muted);">暂无匹配菜谱，换些食材试试</div>';
             return;
         }
 
         scoredRecipes.forEach(sr => {
             let recipe = sr.recipe;
             const card = document.createElement('div');
-            card.className = 'recipe-card';
+            card.className = 'match-list-item';
             
-            let starsHtml = '';
-            for(let i=0; i<5; i++) {
-                if(i < recipe.difficulty) starsHtml += '<i class="fa-solid fa-star"></i>';
-                else starsHtml += '<i class="fa-regular fa-star"></i>';
-            }
-            
-            let myCooked = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
-            let cookedHtml = `<span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-fire-burner"></i> 做过 ${myCooked} 次</span>`;
-
-            let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
+            let tagsHtml = '';
+            sr.matched.forEach(m => {
+                tagsHtml += `<div class="match-ing-tag matched">${m} <i class="fa-solid fa-check"></i></div>`;
+            });
+            sr.missing.forEach(m => {
+                tagsHtml += `<div class="match-ing-tag missing">${m} <i class="fa-solid fa-xmark"></i></div>`;
+            });
 
             card.innerHTML = `
-                <div class="recipe-cover-wrap">
-                    <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
-                    <div class="match-badge">${sr.percent}% 满足</div>
-                    <div class="cover-duration"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</div>
+                <div class="match-list-left">
+                    <img src="${recipe.coverUrl}" alt="${recipe.name}">
                 </div>
-                <div class="recipe-info">
-                    <h3 class="recipe-title">${recipe.name}</h3>
-                    <div class="recipe-meta">
-                        <div class="recipe-author">
-                            <img src="${authorAvatar}" alt="author">
-                            <span>${recipe.author}</span>
-                        </div>
-                        <div class="recipe-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
-                            <div style="font-size: 0.75rem;">${starsHtml}</div>
-                            ${cookedHtml}
-                        </div>
+                <div class="match-list-right">
+                    <h3 class="match-list-title">${recipe.name}</h3>
+                    <div class="match-ing-tags">
+                        ${tagsHtml}
+                    </div>
+                    <div class="match-percent">
+                        满足度 ${sr.percent}%
                     </div>
                 </div>
             `;
