@@ -165,7 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderMatchGrid() {
+    // Match UI Render
+    window.renderMatchGrid = function renderMatchGrid() {
         if (!matchRecipeGrid) return;
         
         if (myIngredients.length === 0) {
@@ -473,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Render Grid
-    function renderGrid() {
+    window.renderGrid = function renderGrid() {
         if (!recipeGrid) return;
         
         let filtered = recipes.filter(r => r.name.includes(searchQuery));
