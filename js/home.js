@@ -1,7 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Check Authentication
-    const userStr = localStorage.getItem('cookcook_user');
-    if (!userStr) {
+    let userStr = localStorage.getItem('cookcook_user');
+    
+    // Clear legacy invalid token
+    if (!userStr || userStr.includes('{') || (userStr !== 'seikai' && userStr !== 'echo')) {
+        localStorage.removeItem('cookcook_user');
         window.location.href = 'index.html';
         return;
     }

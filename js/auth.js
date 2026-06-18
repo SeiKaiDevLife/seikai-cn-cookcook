@@ -1,24 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
-    const submitBtn = loginForm.querySelector('.btn-primary');
+    const submitBtn = loginForm.querySelector('.primary-btn') || loginForm.querySelector('button');
 
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         
+        const usernameInput = document.getElementById('username').value.trim().toLowerCase();
+        
+        if (usernameInput !== 'seikai' && usernameInput !== 'echo') {
+            alert('用户名不正确，只允许 seikai 或 echo 登录！');
+            return;
+        }
+        
         // Add loading state
-        submitBtn.classList.add('loading');
+        if (submitBtn) submitBtn.classList.add('loading');
         
         // Simulate API call
         setTimeout(() => {
-            submitBtn.classList.remove('loading');
-            // Store a fake token or user info
-            localStorage.setItem('cookcook_user', JSON.stringify({
-                name: '测试用户',
-                avatar: 'public/avatars/default.png'
-            }));
+            if (submitBtn) submitBtn.classList.remove('loading');
+            
+            // Store the actual username
+            localStorage.setItem('cookcook_user', usernameInput);
             
             // Redirect to home page
             window.location.href = 'home.html';
-        }, 1200);
+        }, 800);
     });
 });
