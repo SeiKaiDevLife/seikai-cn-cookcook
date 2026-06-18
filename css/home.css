@@ -948,6 +948,30 @@
     gap: 1rem;
 }
 
+.upload-area {
+    width: 100%;
+    padding: 2rem;
+    border: 2px dashed #CCC;
+    border-radius: 16px;
+    background: #FAFAFA;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.upload-area:hover {
+    border-color: #000;
+    color: #000;
+}
+
+.upload-area i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
 .publish-section {
     background: #FAFAFA;
     padding: 1.5rem;

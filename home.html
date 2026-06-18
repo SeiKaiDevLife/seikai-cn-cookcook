@@ -70,8 +70,13 @@
                     <input type="text" id="pubName" placeholder="例如：西红柿炒鸡蛋">
                 </div>
                 <div class="form-group">
-                    <label>封面图片链接</label>
-                    <input type="text" id="pubCover" placeholder="支持公网图片 URL（留空默认）">
+                    <label>封面图片上传</label>
+                    <div class="upload-area" id="pubCoverUpload" onclick="document.getElementById('pubCoverFile').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>点击选择图片</span>
+                    </div>
+                    <input type="file" id="pubCoverFile" accept="image/*" style="display:none;" onchange="window.handleCoverUpload(event)">
+                    <img id="pubCoverPreview" style="display:none; width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-top: 1rem;">
                 </div>
                 
                 <div class="form-row">
@@ -87,18 +92,43 @@
                 
                 <div class="publish-section">
                     <h3>食材与佐料</h3>
+                    
                     <div class="form-group">
-                        <label>食材 (格式: 名称 数量，每行一个)</label>
-                        <textarea id="pubIngs" rows="3" placeholder="鸡蛋 3个&#10;西红柿 2个"></textarea>
+                        <label>添加食材</label>
+                        <div class="ing-input-group">
+                            <input type="text" id="pubIngName" placeholder="名称 (如：西红柿)" style="flex: 2;">
+                            <input type="text" id="pubIngAmount" placeholder="用量 (如：2个)" style="flex: 1;">
+                            <button id="addPubIngBtn"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div class="ing-tags" id="pubIngTagsContainer" style="margin-top: 0.5rem;">
+                            <!-- Tags will go here -->
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>佐料 (每行一个)</label>
-                        <textarea id="pubSeas" rows="2" placeholder="盐&#10;白糖"></textarea>
+                    
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>添加佐料</label>
+                        <div class="ing-input-group">
+                            <input type="text" id="pubSeasInput" placeholder="例如：盐、生抽...">
+                            <button id="addPubSeasBtn"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div class="ing-tags" id="pubSeasTagsContainer" style="margin-top: 0.5rem;">
+                            <!-- Tags will go here -->
+                        </div>
                     </div>
                 </div>
                 
                 <div class="publish-section">
-                    <h3>制作步骤</h3>
+                    <h3>教程与步骤</h3>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label>教学参考 (图片或视频)</label>
+                        <div class="upload-area" id="pubTutorialUpload" onclick="document.getElementById('pubTutorialFile').click()">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>点击选择媒体文件</span>
+                        </div>
+                        <input type="file" id="pubTutorialFile" accept="image/*,video/*" multiple style="display:none;" onchange="window.handleTutorialUpload(event)">
+                        <div id="pubTutorialPreview" style="display:flex; gap:0.5rem; overflow-x:auto; margin-top:1rem;"></div>
+                    </div>
+                    
                     <div id="pubStepsContainer"></div>
                     
                     <div class="add-step-bar">

@@ -208,7 +208,121 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Publish Logic
     let pubSteps = [];
+    let pubIngList = [];
+    let pubSeasList = [];
+    let pubCoverUrl = '';
+    let pubTutorialUrls = [];
+    let pubTutorialType = 'image';
+
+    window.handleCoverUpload = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            pubCoverUrl = URL.createObjectURL(file);
+            document.getElementById('pubCoverUpload').style.display = 'none';
+            let preview = document.getElementById('pubCoverPreview');
+            preview.src = pubCoverUrl;
+            preview.style.display = 'block';
+        }
+    };
     
+    window.handleTutorialUpload = function(event) {
+        const files = Array.from(event.target.files);
+        if (files.length > 0) {
+            pubTutorialType = files[0].type.startsWith('video') ? 'video' : 'image';
+            files.forEach(file => {
+                let url = URL.createObjectURL(file);
+                pubTutorialUrls.push(url);
+                let el;
+                if (file.type.startsWith('video')) {
+                    el = document.createElement('video');
+                    el.src = url;
+                    el.controls = true;
+                } else {
+                    el = document.createElement('img');
+                    el.src = url;
+                }
+                el.style.width = '100px';
+                el.style.height = '100px';
+                el.style.objectFit = 'cover';
+                el.style.borderRadius = '8px';
+                el.style.flexShrink = '0';
+                document.getElementById('pubTutorialPreview').appendChild(el);
+            });
+        }
+    };
+
+    const pubIngName = document.getElementById('pubIngName');
+    const pubIngAmount = document.getElementById('pubIngAmount');
+    const addPubIngBtn = document.getElementById('addPubIngBtn');
+    const pubIngTagsContainer = document.getElementById('pubIngTagsContainer');
+
+    const pubSeasInput = document.getElementById('pubSeasInput');
+    const addPubSeasBtn = document.getElementById('addPubSeasBtn');
+    const pubSeasTagsContainer = document.getElementById('pubSeasTagsContainer');
+
+    function renderPubIngTags() {
+        if (!pubIngTagsContainer) return;
+        pubIngTagsContainer.innerHTML = pubIngList.map((ingObj, idx) => `
+            <div class="ing-tag" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2);">
+                ${ingObj.name} ${ingObj.amount}
+                <i class="fa-solid fa-xmark" style="color: #059669;" onclick="window.removePubIng(${idx})"></i>
+            </div>
+        `).join('');
+    }
+
+    function renderPubSeasTags() {
+        if (!pubSeasTagsContainer) return;
+        pubSeasTagsContainer.innerHTML = pubSeasList.map((seas, idx) => `
+            <div class="ing-tag" style="background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245,158,11,0.2);">
+                ${seas}
+                <i class="fa-solid fa-xmark" style="color: #d97706;" onclick="window.removePubSeas(${idx})"></i>
+            </div>
+        `).join('');
+    }
+
+    window.removePubIng = function(idx) {
+        pubIngList.splice(idx, 1);
+        renderPubIngTags();
+    };
+
+    window.removePubSeas = function(idx) {
+        pubSeasList.splice(idx, 1);
+        renderPubSeasTags();
+    };
+
+    if (addPubIngBtn && pubIngName && pubIngAmount) {
+        addPubIngBtn.addEventListener('click', () => {
+            let name = pubIngName.value.trim();
+            let amount = pubIngAmount.value.trim();
+            if (name) {
+                pubIngList.push({ name: name, amount: amount });
+                pubIngName.value = '';
+                pubIngAmount.value = '';
+                renderPubIngTags();
+            }
+        });
+        pubIngName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPubIngBtn.click();
+        });
+        pubIngAmount.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPubIngBtn.click();
+        });
+    }
+
+    if (addPubSeasBtn && pubSeasInput) {
+        addPubSeasBtn.addEventListener('click', () => {
+            let val = pubSeasInput.value.trim();
+            if (val && !pubSeasList.includes(val)) {
+                pubSeasList.push(val);
+                pubSeasInput.value = '';
+                renderPubSeasTags();
+            }
+        });
+        pubSeasInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPubSeasBtn.click();
+        });
+    }
+
     window.addPubStep = function(type) {
         pubSteps.push({
             id: 's' + Date.now(),
@@ -263,25 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let name = document.getElementById('pubName').value.trim();
-        let cover = document.getElementById('pubCover').value.trim() || 'public/images/covers/recipe_001.webp';
+        let cover = pubCoverUrl || 'public/images/covers/recipe_001.webp';
         let diff = parseInt(document.getElementById('pubDiff').value) || 3;
         let dur = parseInt(document.getElementById('pubDur').value) || 15;
         
-        let ingsRaw = document.getElementById('pubIngs').value.trim();
-        let seasRaw = document.getElementById('pubSeas').value.trim();
-        
         if (!name) { alert("菜谱名称不能为空！"); return; }
         
-        let newIngs = [];
-        if (ingsRaw) {
-            newIngs = ingsRaw.split('\n').map(line => {
-                let parts = line.trim().split(/\s+/);
-                if (parts.length >= 2) return { name: parts[0], amount: parts.slice(1).join(' ') };
-                return { name: line.trim(), amount: '' };
-            }).filter(i => i.name);
-        }
-        
-        let newSeas = seasRaw ? seasRaw.split('\n').map(l => l.trim()).filter(l => l) : [];
+        let newIngs = [...pubIngList];
+        let newSeas = [...pubSeasList];
         
         let newRecipe = {
             id: 'recipe_' + Date.now(),
@@ -297,6 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 seasonings: newSeas
             },
             steps: pubSteps,
+            tutorials: pubTutorialUrls.length > 0 ? {
+                type: pubTutorialType,
+                urls: pubTutorialUrls
+            } : null,
             notes: []
         };
         
@@ -308,10 +415,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Reset form
         document.getElementById('pubName').value = '';
-        document.getElementById('pubCover').value = '';
-        document.getElementById('pubIngs').value = '';
-        document.getElementById('pubSeas').value = '';
+        pubCoverUrl = '';
+        pubTutorialUrls = [];
+        document.getElementById('pubCoverUpload').style.display = 'block';
+        document.getElementById('pubCoverPreview').style.display = 'none';
+        document.getElementById('pubCoverPreview').src = '';
+        document.getElementById('pubTutorialPreview').innerHTML = '';
+        if(pubIngName) pubIngName.value = '';
+        if(pubIngAmount) pubIngAmount.value = '';
+        if(pubSeasInput) pubSeasInput.value = '';
+        
+        pubIngList = [];
+        pubSeasList = [];
         pubSteps = [];
+        renderPubIngTags();
+        renderPubSeasTags();
         renderPubSteps();
     };
 
