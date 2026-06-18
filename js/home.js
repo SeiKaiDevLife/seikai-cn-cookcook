@@ -86,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!cartRecipeIds.includes(id)) {
             cartRecipeIds.push(id);
             window.showToast("已加入点菜清单！");
+            window.renderGrid();
+            window.renderMatchGrid();
             if (guideState === 'CART') renderGuide();
         } else {
             window.showToast("已经在清单中了");
@@ -1039,9 +1041,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         你想怎么做 <span style="color:#059669;">${dish.recipe.name}</span>？
                     </h2>
                     <div style="display:flex; flex-direction:column; gap:1.2rem; width:100%; max-width:300px;">
-                        <button class="primary-btn" style="background:#000;" onclick="window.selectMode('tutorial')">仅看教程</button>
-                        <button class="primary-btn" style="background:#000;" onclick="window.selectMode('steps')">仅看图文步骤</button>
-                        <button class="primary-btn" style="background:#059669;" onclick="window.selectMode('both')">教程 + 图文步骤</button>
+                        <button class="primary-btn" style="background:#059669;" onclick="window.selectMode('steps')">做菜步骤</button>
+                        <button class="primary-btn" style="background:#000;" onclick="window.selectMode('tutorial')">视频/图片教程</button>
                     </div>
                 </div>
             `;
@@ -1165,7 +1166,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.removeFromCart = function(id) {
         cartRecipeIds = cartRecipeIds.filter(x => x !== id);
-        renderGuide();
+        window.renderGrid();
+        window.renderMatchGrid();
+        if (guideState === 'CART' || guideState === 'ORDER' || guideState === 'PREP') renderGuide();
     };
 
     window.handleGuideSearch = function() {
