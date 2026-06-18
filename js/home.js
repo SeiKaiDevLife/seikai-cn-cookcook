@@ -212,7 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.innerHTML = `
                 <div class="match-list-item" onclick="window.openDetail(recipes.find(x => x.id === '${recipe.id}'))" style="position:relative;">
-                <button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-plus"></i></button>
+                ${cartRecipeIds.includes(recipe.id) ? 
+                    `<button class="added-to-cart-btn" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-check"></i></button>` :
+                    `<button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-plus"></i></button>`
+                }
                 <div class="match-list-left">
                     <img src="${recipe.coverUrl}" alt="${recipe.name}">
                 </div>
@@ -531,8 +534,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="recipe-info">
                     <div class="recipe-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <span style="font-weight:700;">${recipe.name}</span>
-                        <button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')"><i class="fa-solid fa-plus"></i></button>
+                        <span>${recipe.name}</span>
+                        ${cartRecipeIds.includes(recipe.id) ? 
+                            `<button class="added-to-cart-btn"><i class="fa-solid fa-check"></i></button>` :
+                            `<button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')"><i class="fa-solid fa-plus"></i></button>`
+                        }
                     </div>
                     <div class="recipe-meta">
                         <div class="recipe-author">
@@ -911,8 +917,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-book-open"></i>
                     <span>笔记</span>
                 </button>
-                <button class="action-btn primary" onclick="window.addToCart('${recipe.id}')">
-                    <i class="fa-solid fa-plus" style="background:#059669; color:#FFF; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:0.2rem;"></i>
                     <span style="font-weight:700;">点菜</span>
                 </button>
             </div>
@@ -945,33 +949,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2 style="font-size:1.8rem; font-weight:800; margin:0;">点菜清单</h2>
                     </div>
                     
-                    <div class="search-box" style="margin-bottom: 1.5rem;">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="guideSearchInput" placeholder="搜索菜谱并添加..." oninput="window.handleGuideSearch()">
-                    </div>
-                    <div id="guideSearchResults" style="margin-bottom: 2rem;"></div>
-                    
-                    <div id="cartListContainer">`;
+                    <div id="cartListContainer" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">`;
             if (cartRecipeIds.length === 0) {
-                html += `<div style="text-align:center; padding: 3rem 0; color:var(--text-muted);">清单空空如也，去首页或者选菜里加几个菜吧！</div>`;
+                html += `<div style="width:100%; text-align:center; padding: 1rem 0; color:var(--text-muted);">暂未点菜</div>`;
             } else {
                 cartRecipeIds.forEach(id => {
                     let r = recipes.find(x => x.id === id);
                     if (r) {
                         html += `
-                            <div class="cart-item">
-                                <div style="display:flex; align-items:center; gap:1rem;">
-                                    <img src="${r.coverUrl}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
-                                    <div style="font-weight:700;">${r.name}</div>
-                                </div>
-                                <button class="add-to-cart-btn" onclick="window.removeFromCart('${r.id}')"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="cart-item-mini">
+                                <img src="${r.coverUrl}">
+                                <span class="cart-item-mini-name">${r.name}</span>
+                                <button class="cart-item-mini-del" onclick="window.removeFromCart('${r.id}')"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                         `;
                     }
                 });
             }
             html += `</div>
-                <button class="primary-btn" onclick="window.startPrep()" style="margin-top:2rem;" ${cartRecipeIds.length===0?'disabled style="opacity:0.5; margin-top:2rem;"':''}>开始备菜</button>
+                    
+                    <div class="search-box" style="margin-bottom: 1.5rem;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="guideSearchInput" placeholder="搜索菜谱并添加..." oninput="window.handleGuideSearch()">
+                    </div>
+                    <div id="guideSearchResults" style="margin-bottom: 2rem;"></div>
+                    
+                <button class="primary-btn" onclick="window.startPrep()" style="margin-top:2rem;" ${cartRecipeIds.length===0?'disabled style="opacity:0.5;"':''}>开始备菜</button>
             </div>`;
             root.innerHTML = html;
         } else if (guideState === 'PREP') {
@@ -1029,20 +1032,20 @@ document.addEventListener('DOMContentLoaded', () => {
             let dish = cookingQueue[currentDishIdx];
             let step = dish.steps[currentStepIdx];
             
-            let typeClass = 'type-cook';
+            let prevStep = currentStepIdx > 0 ? dish.steps[currentStepIdx - 1] : null;
+            let nextStep = currentStepIdx < dish.steps.length - 1 ? dish.steps[currentStepIdx + 1] : null;
+
+            let typeClass = 'bg-cook';
             let typeName = '烹饪';
-            if(step.type === 'timer') { typeClass = 'type-timer'; typeName = '计时'; }
-            if(step.type === 'judge') { typeClass = 'type-judge'; typeName = '判断'; }
+            if(step.type === 'timer') { typeClass = 'bg-timer'; typeName = '计时'; }
+            if(step.type === 'judge') { typeClass = 'bg-judge'; typeName = '判断'; }
             
             let extraHtml = '';
             if (step.type === 'timer') {
                 extraHtml = `
-                    <div class="timer-container">
-                        <div class="timer-display" id="timerDisplay">${step.timerSeconds}s</div>
-                        <div class="timer-progress-bg">
-                            <div class="timer-progress-bar" id="timerProgressBar" style="width: 100%;"></div>
-                        </div>
-                        <button class="primary-btn" id="startTimerBtn" onclick="window.startStepTimer(${step.timerSeconds})" style="background:#2563eb; width:80%;">开始倒计时</button>
+                    <div class="timer-unified-btn" id="unifiedTimerBtn" onclick="window.startStepTimer(${step.timerSeconds})">
+                        <div class="timer-unified-progress" id="timerProgressBar" style="width: 100%;"></div>
+                        <div class="timer-unified-text" id="timerDisplay">${step.timerSeconds}s 开始倒计时</div>
                     </div>
                 `;
             }
@@ -1053,10 +1056,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="cooking-dish-name">${dish.recipe.name}</div>
                         <div class="cooking-progress-text">第 ${currentDishIdx+1}/${cookingQueue.length} 道菜 | 步骤 ${currentStepIdx+1}/${dish.steps.length}</div>
                     </div>
-                    <div class="cooking-body">
-                        <div class="cooking-step-type ${typeClass}">${typeName}</div>
-                        <div class="cooking-step-content">${step.content}</div>
-                        ${extraHtml}
+                    <div class="cooking-cards-wrapper">
+                        ${prevStep ? `
+                        <div class="cooking-card cooking-card-prev">
+                            <div class="step-content-box">${prevStep.content}</div>
+                        </div>` : ''}
+                        
+                        <div class="cooking-card cooking-card-current ${typeClass}">
+                            <div class="cooking-step-type">${typeName}</div>
+                            <div class="step-content-box">
+                                <div class="cooking-step-content">${step.content}</div>
+                            </div>
+                            ${extraHtml}
+                        </div>
+                        
+                        ${nextStep ? `
+                        <div class="cooking-card cooking-card-next">
+                            <div class="step-content-box">${nextStep.content}</div>
+                        </div>` : ''}
                     </div>
                     <div class="cooking-action">
                         <button class="finish-step-btn" onclick="window.finishStep()">
@@ -1152,8 +1169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let left = seconds;
         const display = document.getElementById('timerDisplay');
         const bar = document.getElementById('timerProgressBar');
-        const btn = document.getElementById('startTimerBtn');
-        if(btn) btn.style.display = 'none';
+        const btn = document.getElementById('unifiedTimerBtn');
+        if(btn) btn.onclick = null; // prevent multiple clicks
         
         timerInterval = setInterval(() => {
             left--;
