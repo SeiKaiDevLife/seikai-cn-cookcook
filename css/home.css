@@ -748,3 +748,84 @@
     background: #fee2e2;
     transform: scale(0.98);
 }
+
+/* Ingredients Match View */
+.ing-header {
+    padding: 1rem 5%;
+    background: #FFF;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.ing-header h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+}
+
+.ing-input-group {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.ing-input-group input {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid #EAEAEA;
+    background: #FAFAFA;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.ing-input-group input:focus {
+    border-color: #000;
+    background: #FFF;
+}
+
+.ing-input-group button {
+    width: 3.5rem;
+    border-radius: 16px;
+    background: var(--text-main);
+    color: #FFF;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.ing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.ing-tag {
+    background: rgba(0,0,0,0.05);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ing-tag i {
+    cursor: pointer;
+    color: #888;
+}
+
+.match-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(16, 185, 129, 0.9);
+    color: #FFF;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+}

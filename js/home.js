@@ -57,6 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetViewId === 'profileView') {
                 renderProfile();
             }
+            
+            if (targetViewId === 'ingredientsView') {
+                renderMatchGrid();
+            }
         });
     });
 
@@ -67,6 +71,121 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSortMode = 'time'; // time, difficulty, duration, proficiency
     let currentSortOrder = 'desc'; // asc, desc
     let searchQuery = '';
+
+    // Ingredients Logic
+    let myIngredients = [];
+    const ingInput = document.getElementById('ingInput');
+    const addIngBtn = document.getElementById('addIngBtn');
+    const ingTagsContainer = document.getElementById('ingTagsContainer');
+    const matchRecipeGrid = document.getElementById('matchRecipeGrid');
+
+    function renderIngTags() {
+        if (!ingTagsContainer) return;
+        ingTagsContainer.innerHTML = myIngredients.map((ing, idx) => `
+            <div class="ing-tag">
+                ${ing}
+                <i class="fa-solid fa-xmark" onclick="window.removeIng(${idx})"></i>
+            </div>
+        `).join('');
+        renderMatchGrid();
+    }
+
+    window.removeIng = function(idx) {
+        myIngredients.splice(idx, 1);
+        renderIngTags();
+    };
+
+    if (addIngBtn && ingInput) {
+        addIngBtn.addEventListener('click', () => {
+            let val = ingInput.value.trim();
+            if (val && !myIngredients.includes(val)) {
+                myIngredients.push(val);
+                ingInput.value = '';
+                renderIngTags();
+            }
+        });
+        
+        ingInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addIngBtn.click();
+            }
+        });
+    }
+
+    function renderMatchGrid() {
+        if (!matchRecipeGrid) return;
+        
+        if (myIngredients.length === 0) {
+            matchRecipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">请输入食材以匹配菜谱</div>';
+            return;
+        }
+
+        let scoredRecipes = recipes.map(r => {
+            let reqIngs = r.materials?.ingredients || [];
+            if (reqIngs.length === 0) return { recipe: r, score: 0, percent: 0 };
+            
+            let matchCount = 0;
+            reqIngs.forEach(req => {
+                let isMatch = myIngredients.some(myIng => 
+                    req.name.includes(myIng) || myIng.includes(req.name)
+                );
+                if (isMatch) matchCount++;
+            });
+            
+            let percent = Math.round((matchCount / reqIngs.length) * 100);
+            return { recipe: r, score: matchCount, percent: percent };
+        });
+
+        scoredRecipes.sort((a, b) => b.percent - a.percent);
+        scoredRecipes = scoredRecipes.filter(sr => sr.percent > 0);
+
+        matchRecipeGrid.innerHTML = '';
+        if (scoredRecipes.length === 0) {
+            matchRecipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">暂无匹配菜谱，换些食材试试</div>';
+            return;
+        }
+
+        scoredRecipes.forEach(sr => {
+            let recipe = sr.recipe;
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+            
+            let starsHtml = '';
+            for(let i=0; i<5; i++) {
+                if(i < recipe.difficulty) starsHtml += '<i class="fa-solid fa-star"></i>';
+                else starsHtml += '<i class="fa-regular fa-star"></i>';
+            }
+            
+            let myCooked = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
+            let cookedHtml = `<span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-fire-burner"></i> 做过 ${myCooked} 次</span>`;
+
+            let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
+
+            card.innerHTML = `
+                <div class="recipe-cover-wrap">
+                    <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
+                    <div class="match-badge">${sr.percent}% 满足</div>
+                    <div class="cover-duration"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</div>
+                </div>
+                <div class="recipe-info">
+                    <h3 class="recipe-title">${recipe.name}</h3>
+                    <div class="recipe-meta">
+                        <div class="recipe-author">
+                            <img src="${authorAvatar}" alt="author">
+                            <span>${recipe.author}</span>
+                        </div>
+                        <div class="recipe-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
+                            <div style="font-size: 0.75rem;">${starsHtml}</div>
+                            ${cookedHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => openDetail(recipe));
+            matchRecipeGrid.appendChild(card);
+        });
+    }
 
     // Render Grid
     function renderGrid() {

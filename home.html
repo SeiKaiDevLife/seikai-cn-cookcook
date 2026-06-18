@@ -42,10 +42,21 @@
             </div>
         </div>
 
-        <!-- Ingredients / 食材 (待开发) -->
+        <!-- Ingredients / 食材 -->
         <div id="ingredientsView" class="view-section">
-            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                <h2>食材匹配功能开发中...</h2>
+            <div class="ing-header">
+                <h2>你有什么食材？</h2>
+                <div class="ing-input-group">
+                    <input type="text" id="ingInput" placeholder="输入食材，如：鸡蛋、西红柿..." />
+                    <button id="addIngBtn"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div class="ing-tags" id="ingTagsContainer">
+                    <!-- Tags will go here -->
+                </div>
+            </div>
+            
+            <div class="recipe-masonry" id="matchRecipeGrid" style="padding-top: 1.5rem;">
+                <!-- Matching recipes here -->
             </div>
         </div>
         
