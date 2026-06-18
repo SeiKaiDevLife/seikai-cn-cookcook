@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Match UI Render
-    window.renderMatchGrid = function renderMatchGrid() {
+    function renderMatchGrid() {
         if (!matchRecipeGrid) return;
         
         if (myIngredients.length === 0) {
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Render Grid
-    window.renderGrid = function renderGrid() {
+    function renderGrid() {
         if (!recipeGrid) return;
         
         let filtered = recipes.filter(r => r.name.includes(searchQuery));
@@ -1304,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         guideState = 'CART';
         cartRecipeIds = [];
         document.querySelector('.tab-item[data-view="homeView"]').click();
-        renderGrid(); // update stats visually
+        window.renderGrid(); // update stats visually
         renderGuide();
     };
 
@@ -1342,4 +1342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else d.classList.remove('active');
         });
     };
+
+    window.renderGrid = renderGrid;
+    window.renderMatchGrid = renderMatchGrid;
 });
