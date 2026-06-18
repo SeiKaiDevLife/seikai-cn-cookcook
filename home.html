@@ -67,22 +67,26 @@
                 <h2 id="profileName">Username</h2>
             </div>
             
-            <div class="profile-stats">
-                <div class="stat-card">
-                    <div class="stat-val" id="statCooked">0</div>
-                    <div class="stat-label">做菜总次数</div>
+            <div class="profile-stats-list">
+                <div class="stat-list-item">
+                    <div class="stat-list-left"><i class="fa-solid fa-fire-burner"></i> 做菜总次数</div>
+                    <div class="stat-list-right" id="statCooked">0</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="statDuration">0h</div>
-                    <div class="stat-label">总时长</div>
+                <div class="stat-list-item">
+                    <div class="stat-list-left"><i class="fa-solid fa-clock"></i> 厨房总时长</div>
+                    <div class="stat-list-right" id="statDuration">0h</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="statPublished">0</div>
-                    <div class="stat-label">发布菜谱</div>
+                <div class="stat-list-item">
+                    <div class="stat-list-left"><i class="fa-solid fa-pen-nib"></i> 发布菜谱数</div>
+                    <div class="stat-list-right" id="statPublished">0</div>
+                </div>
+                <div class="stat-list-item">
+                    <div class="stat-list-left"><i class="fa-solid fa-book-open"></i> 撰写心得笔记</div>
+                    <div class="stat-list-right" id="statNotes">0</div>
                 </div>
             </div>
             
-            <div class="profile-actions">
+            <div class="profile-actions-fixed">
                 <button class="logout-btn" onclick="window.logout()">退出登录</button>
             </div>
         </div>
