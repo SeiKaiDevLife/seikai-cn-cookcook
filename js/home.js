@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // UI Elements
     const searchInput = document.getElementById('searchInput');
-    const sortTabs = document.querySelectorAll('.sort-tab');
+    const sortModeSelect = document.getElementById('sortMode');
     const sortOrderBtn = document.getElementById('sortOrderBtn');
     const recipeGrid = document.getElementById('recipeGrid');
     const topBar = document.getElementById('topBar');
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="recipe-title">${recipe.name}</h3>
                     <div class="recipe-meta">
                         <div class="recipe-author">
-                            <img src="${authorAvatar}" alt="author" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MxLjY2IDAgMyAxLjM0IDMgM3MtMS4zNCAzLTMgMy0zLTEuMzQtMy0zIDEuMzQtMyAzLTN6bTAgMTQuMmMtMi41IDAtNC43MS0xLjI4LTYtMy4yMi4wMy0xLjk5IDQtMy4wOCA2LTMuMDhzNS45NyAxLjA5IDYgMy4wOGMtMS4yOSAxLjk0LTMuNSAzLjIyLTYgMy4yMnoiLz48L3N2Zz4='">
+                            <img src="${authorAvatar}" alt="author">
                             <span>${recipe.author}</span>
                         </div>
                         <div class="recipe-stats">
@@ -135,14 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (sortTabs.length > 0) {
-        sortTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                sortTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentSortMode = tab.dataset.sort;
-                renderGrid();
-            });
+    if (sortModeSelect) {
+        sortModeSelect.addEventListener('change', (e) => {
+            currentSortMode = e.target.value;
+            renderGrid();
         });
     }
     
@@ -219,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="detail-title">${recipe.name}</h2>
                 <div class="detail-meta">
                     <div class="recipe-author" style="width:100%; margin-bottom:0.5rem;">
-                        <img src="${authorAvatar}" alt="author" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MxLjY2IDAgMyAxLjM0IDMgM3MtMS4zNCAzLTMgMy0zLTEuMzQtMy0zIDEuMzQtMyAzLTN6bTAgMTQuMmMtMi41IDAtNC43MS0xLjI4LTYtMy4yMi4wMy0xLjk5IDQtMy4wOCA2LTMuMDhzNS45NyAxLjA5IDYgMy4wOGMtMS4yOSAxLjk0LTMuNSAzLjIyLTYgMy4yMnoiLz48L3N2Zz4='">
+                        <img src="${authorAvatar}" alt="author">
                         <span>${recipe.author}</span>
                         <span style="margin-left:auto;">${recipe.createTime}</span>
                     </div>

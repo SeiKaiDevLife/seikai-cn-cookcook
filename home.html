@@ -13,21 +13,17 @@
 <body>
     <!-- Top Action Bar -->
     <header class="top-bar" id="topBar">
-        <div class="search-row">
-            <button class="filter-btn"><i class="fa-solid fa-bars-staggered"></i></button>
-            <div class="search-box">
-                <i class="fa-solid fa-search"></i>
-                <input type="text" id="searchInput" placeholder="搜索菜谱、食材...">
-            </div>
-            <button class="scan-btn"><i class="fa-solid fa-qrcode"></i></button>
+        <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索菜谱...">
         </div>
-        <div class="sort-row">
-            <div class="sort-tabs">
-                <div class="sort-tab active" data-sort="time">最新<div class="indicator"></div></div>
-                <div class="sort-tab" data-sort="difficulty">难度<div class="indicator"></div></div>
-                <div class="sort-tab" data-sort="duration">耗时<div class="indicator"></div></div>
-                <div class="sort-tab" data-sort="proficiency">熟练<div class="indicator"></div></div>
-            </div>
+        <div class="sort-actions">
+            <select id="sortMode" class="sort-select-btn">
+                <option value="time">最新</option>
+                <option value="difficulty">难度</option>
+                <option value="duration">时长</option>
+                <option value="proficiency">熟练</option>
+            </select>
             <button id="sortOrderBtn" class="sort-order-btn" data-order="desc">
                 <i class="fa-solid fa-arrow-down-short-wide"></i>
             </button>
