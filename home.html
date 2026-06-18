@@ -15,15 +15,18 @@
     <header class="top-bar" id="topBar">
         <div class="search-box">
             <i class="fa-solid fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索菜谱...">
+            <input type="text" id="searchInput" placeholder="搜索你感兴趣的美食...">
         </div>
         <div class="sort-actions">
-            <select id="sortMode" class="sort-select-btn">
-                <option value="time">最新</option>
-                <option value="difficulty">难度</option>
-                <option value="duration">时长</option>
-                <option value="proficiency">熟练</option>
-            </select>
+            <div class="custom-dropdown" id="sortDropdown">
+                <div class="dropdown-trigger" id="sortTrigger"><span>最新</span> <i class="fa-solid fa-chevron-down"></i></div>
+                <div class="dropdown-menu" id="sortMenu">
+                    <div class="dropdown-item active" data-val="time">最新</div>
+                    <div class="dropdown-item" data-val="difficulty">难度</div>
+                    <div class="dropdown-item" data-val="duration">时长</div>
+                    <div class="dropdown-item" data-val="proficiency">熟练</div>
+                </div>
+            </div>
             <button id="sortOrderBtn" class="sort-order-btn" data-order="desc">
                 <i class="fa-solid fa-arrow-down-short-wide"></i>
             </button>
@@ -66,29 +69,27 @@
     </main>
 
     <!-- Bottom Tab Bar -->
-    <nav class="bottom-tab-bar">
-        <div class="tab-item active" data-view="homeView">
-            <i class="fa-solid fa-house"></i>
-            <span>首页</span>
-        </div>
-        <div class="tab-item" data-view="ingredientsView">
-            <i class="fa-solid fa-carrot"></i>
-            <span>食材</span>
-        </div>
-        <div class="tab-item publish-tab" data-view="publishView">
-            <div class="publish-btn">
-                <i class="fa-solid fa-plus"></i>
+    <div class="bottom-tab-wrapper">
+        <nav class="bottom-tab-bar">
+            <div class="tab-item active" data-view="homeView">
+                <i class="fa-solid fa-house"></i>
             </div>
-        </div>
-        <div class="tab-item" data-view="menuView">
-            <i class="fa-solid fa-list-check"></i>
-            <span>点菜</span>
-        </div>
-        <div class="tab-item" data-view="profileView">
-            <i class="fa-solid fa-user"></i>
-            <span>我的</span>
-        </div>
-    </nav>
+            <div class="tab-item" data-view="ingredientsView">
+                <i class="fa-solid fa-carrot"></i>
+            </div>
+            <div class="tab-item publish-tab" data-view="publishView">
+                <div class="publish-btn">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            </div>
+            <div class="tab-item" data-view="menuView">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div class="tab-item" data-view="profileView">
+                <i class="fa-solid fa-user"></i>
+            </div>
+        </nav>
+    </div>
 
     <!-- Recipe Detail Modal -->
     <div class="modal" id="recipeModal">

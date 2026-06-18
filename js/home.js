@@ -6,9 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    // UI Elements
     const searchInput = document.getElementById('searchInput');
-    const sortModeSelect = document.getElementById('sortMode');
+    const sortDropdown = document.getElementById('sortDropdown');
+    const sortTrigger = document.getElementById('sortTrigger');
+    const sortMenuItems = document.querySelectorAll('.dropdown-item');
     const sortOrderBtn = document.getElementById('sortOrderBtn');
     const recipeGrid = document.getElementById('recipeGrid');
     const topBar = document.getElementById('topBar');
@@ -135,10 +136,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (sortModeSelect) {
-        sortModeSelect.addEventListener('change', (e) => {
-            currentSortMode = e.target.value;
-            renderGrid();
+    if (sortDropdown && sortTrigger) {
+        sortTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sortDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', () => {
+            sortDropdown.classList.remove('open');
+        });
+
+        sortMenuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                sortMenuItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                sortTrigger.innerHTML = `<span>${item.innerText}</span> <i class="fa-solid fa-chevron-down"></i>`;
+                currentSortMode = item.dataset.val;
+                renderGrid();
+            });
         });
     }
     
@@ -169,16 +184,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
         
         let ingsHtml = recipe.materials?.ingredients?.map(ing => 
-            `<span class="ingredient-item">${ing.name} <span class="amount">${ing.amount}</span></span>`
+            `<div class="ingredient-card">
+                <span class="name">${ing.name}</span>
+                <span class="amount">${ing.amount}</span>
+            </div>`
         ).join('') || '';
         
         let seasHtml = recipe.materials?.seasonings?.map(s => 
-            `<span class="ingredient-item">${s}</span>`
+            `<div class="seasoning-chip">${s}</div>`
         ).join('') || '';
 
         let tutorialsHtml = '';
-        if (recipe.tutorials && recipe.tutorials.urls) {
-            tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3><div style="display:flex; flex-direction:column; gap:1rem;">`;
+        if (recipe.tutorials && recipe.tutorials.urls && recipe.tutorials.urls.length > 0) {
+            tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3><div class="tutorial-scroll">`;
             recipe.tutorials.urls.forEach(url => {
                 if (recipe.tutorials.type === 'video') {
                     tutorialsHtml += `<video controls class="step-media" src="${url}"></video>`;
@@ -191,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let stepsHtml = recipe.steps?.map((step, idx) => {
             let mediaHtml = step.media ? 
-                (step.media.endsWith('.mp4') ? `<video controls class="step-media" src="${step.media}"></video>` : `<img class="step-media" src="${step.media}" alt="step media">`) 
+                (step.media.endsWith('.mp4') ? `<video controls class="step-inline-media" src="${step.media}"></video>` : `<img class="step-inline-media" src="${step.media}" alt="step media">`) 
                 : '';
             
             let typeName = '';
@@ -202,9 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `
                 <div class="step-item type-${step.type}">
-                    <div style="font-size:0.8rem; font-weight:bold; margin-bottom:0.5rem; opacity:0.8;">[${typeName}] 步骤 ${idx + 1}</div>
-                    <p>${step.content}</p>
-                    ${mediaHtml}
+                    <div class="step-number">${idx + 1}</div>
+                    <div class="step-content">
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem; font-weight:600;">[${typeName}]</div>
+                        <p>${step.content}</p>
+                        ${mediaHtml}
+                    </div>
                 </div>
             `;
         }).join('') || '';
@@ -214,10 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.name}</h2>
                 <div class="detail-meta">
-                    <div class="recipe-author" style="width:100%; margin-bottom:0.5rem;">
+                    <div class="recipe-author-lg">
                         <img src="${authorAvatar}" alt="author">
-                        <span>${recipe.author}</span>
-                        <span style="margin-left:auto;">${recipe.createTime}</span>
+                        <span style="font-weight:600; color:var(--text-main);">${recipe.author}</span>
+                        <span style="margin-left:0.5rem; color:var(--text-muted);">${recipe.createTime}</span>
                     </div>
                 </div>
                 
@@ -225,12 +246,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <div class="detail-section">
                     <h3>食材</h3>
-                    <div class="ingredient-list">${ingsHtml}</div>
+                    <div class="ingredient-grid">${ingsHtml}</div>
                 </div>
                 
                 <div class="detail-section">
                     <h3>佐料</h3>
-                    <div class="ingredient-list">${seasHtml}</div>
+                    <div class="seasoning-list">${seasHtml}</div>
                 </div>
 
                 <div class="detail-section">
@@ -240,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        modal.style.display = 'flex';
+        modal.style.display = 'block';
         // force reflow
         void modal.offsetWidth;
         modal.classList.add('show');
