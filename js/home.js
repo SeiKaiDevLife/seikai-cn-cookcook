@@ -1,12 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Check Authentication
     let userStr = localStorage.getItem('cookcook_user');
-    
-    // Clear legacy invalid token
+    let displayUserStr = '';
+
     if (!userStr || userStr.includes('{') || (userStr !== 'seikai' && userStr !== 'echo')) {
         localStorage.removeItem('cookcook_user');
         window.location.href = 'index.html';
         return;
+    } else {
+        displayUserStr = userStr.charAt(0).toUpperCase() + userStr.slice(1);
     }
     
     const searchInput = document.getElementById('searchInput');
@@ -37,12 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewSections = document.querySelectorAll('.view-section');
 
     tabItems.forEach(tab => {
-        tab.addEventListener('click', () => {
+        tab.addEventListener('click', (e) => {
             tabItems.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             
-            viewSections.forEach(v => v.classList.remove('active'));
             const targetViewId = tab.dataset.view;
+            if (e.isTrusted && targetViewId === 'publishView' && window.resetPublishForm) {
+                window.resetPublishForm();
+            }
+            
+            viewSections.forEach(v => v.classList.remove('active'));
             const targetView = document.getElementById(targetViewId);
             if (targetView) targetView.classList.add('active');
             
@@ -246,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pubCoverUrl = '';
     let pubTutorialUrls = [];
     let pubTutorialType = 'image';
+    let editingRecipeId = null;
 
     window.handleCoverUpload = function(event) {
         const file = event.target.files[0];
@@ -409,8 +416,89 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
     
+    window.editRecipe = function(id) {
+        let recipe = recipes.find(x => x.id === id);
+        if (!recipe || recipe.author !== userStr) return;
+        
+        editingRecipeId = id;
+        pubIngList = JSON.parse(JSON.stringify(recipe.materials?.ingredients || []));
+        pubSeasList = JSON.parse(JSON.stringify(recipe.materials?.seasonings || []));
+        pubSteps = JSON.parse(JSON.stringify(recipe.steps || []));
+        pubCoverUrl = recipe.coverUrl || '';
+        pubTutorialUrls = recipe.tutorials?.urls ? [...recipe.tutorials.urls] : [];
+        pubTutorialType = recipe.tutorials?.type || 'image';
+        
+        document.getElementById('pubName').value = recipe.name;
+        document.getElementById('pubDiff').value = recipe.difficulty;
+        document.getElementById('pubDur').value = recipe.durationMin;
+        
+        let coverUpload = document.getElementById('pubCoverUpload');
+        let coverPreview = document.getElementById('pubCoverPreview');
+        if (pubCoverUrl) {
+            coverUpload.style.display = 'none';
+            coverPreview.style.display = 'block';
+            coverPreview.src = pubCoverUrl;
+        } else {
+            coverUpload.style.display = 'flex';
+            coverPreview.style.display = 'none';
+            coverPreview.src = '';
+        }
+        
+        let tutPreview = document.getElementById('pubTutorialPreview');
+        tutPreview.innerHTML = '';
+        pubTutorialUrls.forEach(url => {
+            let el = document.createElement(pubTutorialType === 'video' ? 'video' : 'img');
+            el.src = url;
+            el.style.width = '80px';
+            el.style.height = '80px';
+            el.style.objectFit = 'cover';
+            el.style.borderRadius = '10px';
+            tutPreview.appendChild(el);
+        });
+        
+        renderPubIngTags();
+        renderPubSeasTags();
+        renderPubSteps();
+        
+        let pubBtn = document.getElementById('publishBtn');
+        if(pubBtn) pubBtn.innerText = '更新菜谱';
+        
+        // Open publish view
+        document.querySelector('.tab-item[data-view="publishView"]').click();
+        
+        // Close detail modal
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+    };
+
+    window.resetPublishForm = function() {
+        editingRecipeId = null;
+        let pubBtn = document.getElementById('publishBtn');
+        if(pubBtn) pubBtn.innerText = '发布菜谱';
+        
+        document.getElementById('pubName').value = '';
+        document.getElementById('pubDiff').value = '3';
+        document.getElementById('pubDur').value = '15';
+        pubCoverUrl = '';
+        pubTutorialUrls = [];
+        document.getElementById('pubCoverUpload').style.display = 'flex';
+        document.getElementById('pubCoverPreview').style.display = 'none';
+        document.getElementById('pubCoverPreview').src = '';
+        document.getElementById('pubTutorialPreview').innerHTML = '';
+        if(document.getElementById('pubIngName')) document.getElementById('pubIngName').value = '';
+        if(document.getElementById('pubIngAmount')) document.getElementById('pubIngAmount').value = '';
+        if(document.getElementById('pubSeasInput')) document.getElementById('pubSeasInput').value = '';
+        
+        pubIngList = [];
+        pubSeasList = [];
+        pubSteps = [];
+        renderPubIngTags();
+        renderPubSeasTags();
+        renderPubSteps();
+    };
+
     window.submitRecipe = function() {
-        let pwd = prompt("请输入二级密码以确认发布（提示：123456）：");
+        let pwd = prompt("请输入二级密码以确认" + (editingRecipeId ? "修改" : "发布") + "（提示：123456）：");
         if (pwd !== "123456") {
             alert("二级密码错误！");
             return;
@@ -426,44 +514,85 @@ document.addEventListener('DOMContentLoaded', () => {
         let newIngs = [...pubIngList];
         let newSeas = [...pubSeasList];
         
-        let newRecipe = {
-            id: 'recipe_' + Date.now(),
-            name: name,
-            coverUrl: cover,
-            author: userStr,
-            createTime: new Date().toISOString().split('T')[0] + " 12:00:00",
-            difficulty: diff,
-            durationMin: dur,
-            cookedStats: {},
-            materials: {
-                ingredients: newIngs,
-                seasonings: newSeas
-            },
-            steps: pubSteps,
-            tutorials: pubTutorialUrls.length > 0 ? {
-                type: pubTutorialType,
-                urls: pubTutorialUrls
-            } : null,
-            notes: []
-        };
-        
-        recipes.unshift(newRecipe);
-        alert("发布成功！(数据仅在本次刷新前有效)");
+        if (editingRecipeId) {
+            let oldRecipe = recipes.find(x => x.id === editingRecipeId);
+            if (oldRecipe) {
+                // Check affected notes
+                let hasAffectedNotes = false;
+                if (oldRecipe.notes && oldRecipe.notes.length > 0) {
+                    for (let note of oldRecipe.notes) {
+                        let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
+                        let newStep = pubSteps.find(s => s.id === note.stepId);
+                        if (!newStep || (oldStep && oldStep.content !== newStep.content)) {
+                            hasAffectedNotes = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (hasAffectedNotes) {
+                    let choice = confirm("您修改或删除了部分包含笔记的步骤。点击“确定”一并删除这些失效笔记，点击“取消”暂时保留。您可以稍后在【笔记】页面中手动修改它们。");
+                    if (choice) {
+                        oldRecipe.notes = oldRecipe.notes.filter(note => {
+                            let newStep = pubSteps.find(s => s.id === note.stepId);
+                            let oldStep = oldRecipe.steps.find(s => s.id === note.stepId);
+                            return newStep && (!oldStep || oldStep.content === newStep.content);
+                        });
+                    }
+                }
+                
+                // Update
+                oldRecipe.name = name;
+                oldRecipe.coverUrl = cover;
+                oldRecipe.difficulty = diff;
+                oldRecipe.durationMin = dur;
+                oldRecipe.materials.ingredients = newIngs;
+                oldRecipe.materials.seasonings = newSeas;
+                oldRecipe.steps = JSON.parse(JSON.stringify(pubSteps));
+                if (pubTutorialUrls.length > 0) {
+                    oldRecipe.tutorials = { type: pubTutorialType, urls: [...pubTutorialUrls] };
+                } else {
+                    oldRecipe.tutorials = null;
+                }
+                alert("修改成功！(数据仅在本次刷新前有效)");
+            }
+        } else {
+            let newRecipe = {
+                id: 'recipe_' + Date.now(),
+                name: name,
+                coverUrl: cover,
+                author: userStr,
+                createTime: new Date().toISOString().split('T')[0] + " 12:00:00",
+                difficulty: diff,
+                durationMin: dur,
+                cookedStats: {},
+                materials: { ingredients: newIngs, seasonings: newSeas },
+                steps: pubSteps,
+                tutorials: pubTutorialUrls.length > 0 ? { type: pubTutorialType, urls: pubTutorialUrls } : null,
+                notes: []
+            };
+            recipes.unshift(newRecipe);
+            alert("发布成功！(数据仅在本次刷新前有效)");
+        }
         
         // Return to home view
         document.querySelector('.tab-item[data-view="homeView"]').click();
         
         // Reset form
+        editingRecipeId = null;
+        let pubBtn = document.getElementById('publishBtn');
+        if(pubBtn) pubBtn.innerText = '发布菜谱';
+        
         document.getElementById('pubName').value = '';
         pubCoverUrl = '';
         pubTutorialUrls = [];
-        document.getElementById('pubCoverUpload').style.display = 'block';
+        document.getElementById('pubCoverUpload').style.display = 'flex';
         document.getElementById('pubCoverPreview').style.display = 'none';
         document.getElementById('pubCoverPreview').src = '';
         document.getElementById('pubTutorialPreview').innerHTML = '';
-        if(pubIngName) pubIngName.value = '';
-        if(pubIngAmount) pubIngAmount.value = '';
-        if(pubSeasInput) pubSeasInput.value = '';
+        if(document.getElementById('pubIngName')) document.getElementById('pubIngName').value = '';
+        if(document.getElementById('pubIngAmount')) document.getElementById('pubIngAmount').value = '';
+        if(document.getElementById('pubSeasInput')) document.getElementById('pubSeasInput').value = '';
         
         pubIngList = [];
         pubSeasList = [];
@@ -471,6 +600,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPubIngTags();
         renderPubSeasTags();
         renderPubSteps();
+        
+        window.renderGrid();
     };
 
     // Render Grid
@@ -549,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="recipe-meta">
                         <div class="recipe-author">
                             <img src="${authorAvatar}" alt="author">
-                            <span>${recipe.author}</span>
+                            <span>${recipe.author.charAt(0).toUpperCase() + recipe.author.slice(1)}</span>
                         </div>
                         <div class="recipe-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
                             <div style="font-size: 0.75rem;">${starsHtml}</div>
@@ -765,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     function renderProfile() {
-        document.getElementById('profileName').innerText = userStr;
+        document.getElementById('profileName').innerText = displayUserStr;
         document.getElementById('profileAvatar').src = userStr === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
         
         let cookedCount = 0;
@@ -885,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="detail-meta">
                     <div class="recipe-author-lg">
                         <img src="${authorAvatar}" alt="author">
-                        <span class="author-name">${recipe.author}</span>
+                        <span class="author-name">${recipe.author.charAt(0).toUpperCase() + recipe.author.slice(1)}</span>
                         <span class="meta-date">${recipe.createTime}</span>
                     </div>
                 </div>
@@ -915,8 +1046,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-fire-burner"></i>
                     <span>做过 (${userCookedCount})</span>
                 </button>
-                <button class="action-btn" onclick="alert('编辑功能开发中')">
-                    <i class="fa-solid fa-pen-to-square"></i>
+                <button class="action-btn" onclick="window.editRecipe('${recipe.id}')">
+                    <i class="fa-solid fa-pen"></i>
                     <span>编辑</span>
                 </button>
                 <button class="action-btn" onclick="window.openNoteModal('${recipe.id}')">
@@ -1156,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (guideState === 'DONE') {
             let html = `
                 <div class="guide-fullscreen guide-done">
-                    <div class="done-title">辛苦了！</div>
+                    <div class="done-title">辛苦了</div>
                     <div class="done-subtitle">所有的美味都已就绪</div>
                     <button class="done-btn" onclick="window.finishGuide()">返回首页</button>
                 </div>
