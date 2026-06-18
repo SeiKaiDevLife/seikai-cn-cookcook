@@ -13,9 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOrderBtn = document.getElementById('sortOrderBtn');
     const recipeGrid = document.getElementById('recipeGrid');
     const topBar = document.getElementById('topBar');
+    // Modal Elements
     const modal = document.getElementById('recipeModal');
     const closeModalBtn = document.getElementById('closeModal');
     const recipeDetailContainer = document.getElementById('recipeDetailContainer');
+
+    const editModal = document.getElementById('editRecipeModal');
+    const closeEditModalBtn = document.getElementById('closeEditModal');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    
+    let currentEditingRecipe = null;
 
     // Tab Switching Logic
     const tabItems = document.querySelectorAll('.tab-item:not(.publish-tab)');
@@ -180,6 +187,103 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (closeEditModalBtn) {
+        closeEditModalBtn.addEventListener('click', () => {
+            editModal.classList.remove('show');
+            setTimeout(() => { editModal.style.display = 'none'; }, 300);
+        });
+    }
+
+    if (saveEditBtn) {
+        saveEditBtn.addEventListener('click', () => {
+            if (!currentEditingRecipe) return;
+            
+            // Collect values
+            const diff = parseInt(document.getElementById('editDifficulty').value) || 1;
+            const dur = parseInt(document.getElementById('editDuration').value) || 10;
+            const ingsRaw = document.getElementById('editIngredients').value.trim();
+            const seasRaw = document.getElementById('editSeasonings').value.trim();
+
+            currentEditingRecipe.difficulty = diff;
+            currentEditingRecipe.durationMin = dur;
+            
+            // Parse ingredients
+            let newIngs = [];
+            if (ingsRaw) {
+                newIngs = ingsRaw.split('\n').map(line => {
+                    let parts = line.trim().split(/\s+/);
+                    if (parts.length >= 2) {
+                        return { name: parts[0], amount: parts.slice(1).join(' ') };
+                    }
+                    return { name: line.trim(), amount: '' };
+                }).filter(i => i.name);
+            }
+            
+            // Parse seasonings
+            let newSeas = [];
+            if (seasRaw) {
+                newSeas = seasRaw.split('\n').map(l => l.trim()).filter(l => l);
+            }
+
+            if (!currentEditingRecipe.materials) currentEditingRecipe.materials = {};
+            currentEditingRecipe.materials.ingredients = newIngs;
+            currentEditingRecipe.materials.seasonings = newSeas;
+
+            // Close edit modal and refresh
+            editModal.classList.remove('show');
+            setTimeout(() => { editModal.style.display = 'none'; }, 300);
+            
+            renderGrid();
+            openDetail(currentEditingRecipe);
+        });
+    }
+
+    // Expose functions for inline onclick handlers
+    window.markCooked = function(recipeId) {
+        let r = recipes.find(x => x.id === recipeId);
+        if (r) {
+            if (!r.cookedStats) r.cookedStats = {};
+            r.cookedStats[userStr] = (r.cookedStats[userStr] || 0) + 1;
+            renderGrid();
+            openDetail(r);
+        }
+    };
+
+    window.openEditModal = function(recipeId) {
+        let r = recipes.find(x => x.id === recipeId);
+        if (r) {
+            currentEditingRecipe = r;
+            document.getElementById('editDifficulty').value = r.difficulty || 1;
+            document.getElementById('editDuration').value = r.durationMin || 10;
+            
+            let ingsStr = (r.materials?.ingredients || []).map(i => `${i.name} ${i.amount}`).join('\n');
+            let seasStr = (r.materials?.seasonings || []).join('\n');
+            
+            document.getElementById('editIngredients').value = ingsStr;
+            document.getElementById('editSeasonings').value = seasStr;
+
+            editModal.style.display = 'block';
+            void editModal.offsetWidth;
+            editModal.classList.add('show');
+        }
+    };
+
+    window.addStepNote = function(recipeId, stepIndex) {
+        let content = prompt("输入做菜心得：");
+        if (content && content.trim()) {
+            let r = recipes.find(x => x.id === recipeId);
+            if (r) {
+                if (!r.notes) r.notes = [];
+                r.notes.push({
+                    stepIndex: stepIndex,
+                    author: userStr,
+                    content: content.trim()
+                });
+                openDetail(r);
+            }
+        }
+    };
+
     function openDetail(recipe) {
         let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
         
@@ -226,31 +330,53 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(step.type === 'timer') typeName = `计时 ${step.timerSeconds}s`;
             else if(step.type === 'judge') typeName = '判断';
 
+            let stepNotes = (recipe.notes || []).filter(n => n.stepIndex === idx);
+            let notesHtml = stepNotes.map(n => `
+                <div style="margin-top: 0.8rem; padding: 0.8rem; background: rgba(0,0,0,0.03); border-radius: 12px; border-left: 3px solid var(--primary-color);">
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.3rem;"><i class="fa-solid fa-pen"></i> ${n.author} 的心得</div>
+                    <div style="font-size:0.95rem; color:var(--text-main);">${n.content}</div>
+                </div>
+            `).join('');
+
             return `
                 <div class="step-timeline-item ${typeClass}">
                     <div class="step-line"></div>
                     <div class="step-dot"></div>
                     <div class="step-content">
-                        <div class="step-header">
-                            <span class="step-num">Step ${idx + 1}</span>
-                            <span class="step-tag">${typeName}</span>
+                        <div class="step-header" style="justify-content: space-between;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <span class="step-num">Step ${idx + 1}</span>
+                                <span class="step-tag">${typeName}</span>
+                            </div>
+                            <button onclick="window.addStepNote('${recipe.id}', ${idx})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;"><i class="fa-solid fa-plus"></i> 心得</button>
                         </div>
                         <p class="step-text">${step.content}</p>
                         ${mediaHtml}
+                        ${notesHtml}
                     </div>
                 </div>
             `;
         }).join('') || '';
 
+        let userCookedCount = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
+
         recipeDetailContainer.innerHTML = `
             <img src="${recipe.coverUrl}" class="detail-cover" alt="cover">
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.name}</h2>
-                <div class="detail-meta">
+                <div class="detail-meta" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                     <div class="recipe-author-lg">
                         <img src="${authorAvatar}" alt="author">
                         <span class="author-name">${recipe.author}</span>
                         <span class="meta-date">${recipe.createTime}</span>
+                    </div>
+                    <div style="display:flex; gap: 0.6rem;">
+                        <button onclick="window.markCooked('${recipe.id}')" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: none; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; cursor: pointer;">
+                            <i class="fa-solid fa-fire-burner"></i> 做过 (${userCookedCount})
+                        </button>
+                        <button onclick="window.openEditModal('${recipe.id}')" style="background: rgba(0, 0, 0, 0.05); color: var(--text-main); border: none; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; cursor: pointer;">
+                            <i class="fa-solid fa-pen-to-square"></i> 编辑
+                        </button>
                     </div>
                 </div>
                 
