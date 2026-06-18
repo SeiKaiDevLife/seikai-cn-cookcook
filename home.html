@@ -3,43 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CookCook - 首页</title>
-    <link rel="stylesheet" href="css/base.css?v=1.0.0">
-    <link rel="stylesheet" href="css/home.css?v=1.0.0">
+    <title>CookCook</title>
+    <link rel="stylesheet" href="css/base.css?v=1.0.3">
+    <link rel="stylesheet" href="css/home.css?v=1.0.3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="js/data.js?v=1.0.0"></script>
+    <script src="js/data.js?v=1.0.3"></script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">
-            <h1>CookCook</h1>
-        </div>
-        <div class="search-bar">
+    <!-- Top Action Bar -->
+    <header class="top-bar">
+        <button class="filter-btn"><i class="fa-solid fa-filter"></i></button>
+        <div class="search-box">
             <i class="fa-solid fa-search"></i>
             <input type="text" id="searchInput" placeholder="搜索你感兴趣的菜谱...">
         </div>
-        <div class="user-profile" id="userProfile">
-            <img src="public/avatars/default.png" alt="User Avatar" id="userAvatar">
-            <span id="userName">User</span>
-            <button id="logoutBtn" class="logout-btn"><i class="fa-solid fa-sign-out-alt"></i></button>
-        </div>
-    </nav>
+    </header>
 
+    <!-- Main Content Area -->
     <main class="container">
-        <header class="section-header">
-            <h2>发现美味</h2>
+        <!-- Home / 首页 (瀑布流区) -->
+        <div id="homeView" class="view-section active">
             <div class="sort-controls">
                 <button class="sort-btn active" data-sort="default">综合排序</button>
                 <button class="sort-btn" data-sort="time">最新发布</button>
                 <button class="sort-btn" data-sort="hot">最多热度</button>
             </div>
-        </header>
+            
+            <div class="recipe-masonry" id="recipeGrid">
+                <!-- Recipes will be dynamically injected here -->
+            </div>
+        </div>
 
-        <div class="recipe-grid" id="recipeGrid">
-            <!-- Recipes will be dynamically injected here -->
+        <!-- Ingredients / 食材 (待开发) -->
+        <div id="ingredientsView" class="view-section">
+            <h2 style="text-align:center; margin-top:2rem;">食材页（开发中）</h2>
         </div>
     </main>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="bottom-tab-bar">
+        <div class="tab-item active" data-view="homeView">
+            <i class="fa-solid fa-house"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" data-view="ingredientsView">
+            <i class="fa-solid fa-carrot"></i>
+            <span>食材</span>
+        </div>
+        <div class="tab-item publish-tab">
+            <div class="publish-btn">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+        </div>
+        <div class="tab-item">
+            <i class="fa-solid fa-list-check"></i>
+            <span>点菜</span>
+        </div>
+        <div class="tab-item">
+            <i class="fa-solid fa-user"></i>
+            <span>我的</span>
+        </div>
+    </nav>
 
     <!-- Recipe Detail Modal -->
     <div class="modal" id="recipeModal">
@@ -49,6 +74,6 @@
         </div>
     </div>
 
-    <script src="js/home.js?v=1.0.0"></script>
+    <script src="js/home.js?v=1.0.3"></script>
 </body>
 </html>

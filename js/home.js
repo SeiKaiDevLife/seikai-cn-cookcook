@@ -7,23 +7,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const currentUser = JSON.parse(userStr);
-    document.getElementById('userName').textContent = currentUser.name;
-    document.getElementById('userAvatar').src = currentUser.avatar;
+    // Top nav elements
+    const searchInput = document.getElementById('searchInput');
+    const sortBtns = document.querySelectorAll('.sort-btn');
+    const recipeGrid = document.getElementById('recipeGrid');
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('cookcook_user');
-        window.location.href = 'index.html';
+    // Tab Switching Logic
+    const tabItems = document.querySelectorAll('.tab-item:not(.publish-tab)');
+    const viewSections = document.querySelectorAll('.view-section');
+
+    tabItems.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabItems.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            viewSections.forEach(v => v.classList.remove('active'));
+            const targetView = document.getElementById(tab.dataset.view);
+            if (targetView) targetView.classList.add('active');
+        });
     });
+
+    // Profile handling (mocked for now, logout could be placed in Profile view later)
+    // Removed old top navbar user profile references to match new UI
 
     // Load Data
     let recipes = window.RECIPE_DATA || [];
     let currentSort = 'default';
     let searchQuery = '';
 
-    const recipeGrid = document.getElementById('recipeGrid');
-    const searchInput = document.getElementById('searchInput');
-    const sortBtns = document.querySelectorAll('.sort-btn');
     const modal = document.getElementById('recipeModal');
     const closeModalBtn = document.getElementById('closeModal');
     const recipeDetailContainer = document.getElementById('recipeDetailContainer');
@@ -58,7 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
 
             card.innerHTML = `
-                <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
+                <div class="recipe-cover-wrap">
+                    <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
+                    <div class="cover-duration"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</div>
+                </div>
                 <div class="recipe-info">
                     <h3 class="recipe-title">${recipe.name}</h3>
                     <div class="recipe-meta">
@@ -67,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>${recipe.author}</span>
                         </div>
                         <div class="recipe-stats">
-                            ${starsHtml} <span style="margin-left: 0.5rem;"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</span>
+                            ${starsHtml}
                         </div>
                     </div>
                 </div>
