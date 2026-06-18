@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CookCook - 首页</title>
+    <link rel="stylesheet" href="css/base.css?v=1.0.0">
+    <link rel="stylesheet" href="css/home.css?v=1.0.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/data.js?v=1.0.0"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h1>CookCook</h1>
+        </div>
+        <div class="search-bar">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索你感兴趣的菜谱...">
+        </div>
+        <div class="user-profile" id="userProfile">
+            <img src="public/avatars/default.png" alt="User Avatar" id="userAvatar">
+            <span id="userName">User</span>
+            <button id="logoutBtn" class="logout-btn"><i class="fa-solid fa-sign-out-alt"></i></button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="section-header">
+            <h2>发现美味</h2>
+            <div class="sort-controls">
+                <button class="sort-btn active" data-sort="default">综合排序</button>
+                <button class="sort-btn" data-sort="time">最新发布</button>
+                <button class="sort-btn" data-sort="hot">最多热度</button>
+            </div>
+        </header>
+
+        <div class="recipe-grid" id="recipeGrid">
+            <!-- Recipes will be dynamically injected here -->
+        </div>
+    </main>
+
+    <!-- Recipe Detail Modal -->
+    <div class="modal" id="recipeModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeModal">&times;</button>
+            <div id="recipeDetailContainer"></div>
+        </div>
+    </div>
+
+    <script src="js/home.js?v=1.0.0"></script>
+</body>
+</html>

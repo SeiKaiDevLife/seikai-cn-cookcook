@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CookCook - 登录</title>
+    <link rel="stylesheet" href="css/base.css?v=1.0.0">
+    <link rel="stylesheet" href="css/index.css?v=1.0.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-anim"></div>
+    <div class="login-container">
+        <div class="glass-panel">
+            <div class="logo-box">
+                <h1>CookCook</h1>
+                <p>探索你的美食世界</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder=" " required autocomplete="off">
+                    <label for="username">用户名</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder=" " required>
+                    <label for="password">密码</label>
+                </div>
+                <button type="submit" class="btn-primary">
+                    <span class="btn-text">立即进入</span>
+                    <div class="loader"></div>
+                </button>
+            </form>
+            <div class="footer-links">
+                <a href="#">忘记密码？</a>
+                <a href="#">注册账号</a>
+            </div>
+        </div>
+    </div>
+    <script src="js/auth.js?v=1.0.0"></script>
+</body>
+</html>
