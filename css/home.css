@@ -398,6 +398,18 @@
     border-radius: 50%;
 }
 
+.author-name {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.meta-date {
+    margin-left: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
 .detail-section {
     margin-bottom: 2.5rem;
 }
@@ -409,14 +421,19 @@
     color: var(--text-main);
 }
 
+.tutorial-scroll-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
 .tutorial-scroll {
     display: flex;
     gap: 1rem;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     padding-bottom: 1rem;
-    margin: 0 -5%;
-    padding: 0 5%;
+    max-width: 100%;
 }
 
 .tutorial-scroll::-webkit-scrollbar {
@@ -433,26 +450,38 @@
     background: #000;
 }
 
-.ingredient-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+.ingredient-list-premium {
+    display: flex;
+    flex-direction: column;
     gap: 0.8rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 16px;
+    padding: 1.2rem;
 }
 
-.ingredient-card {
-    background: #fff;
-    padding: 0.8rem 1rem;
-    border-radius: 12px;
+.ingredient-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    box-shadow: var(--shadow-sm);
-    font-size: 0.95rem;
+    align-items: flex-end;
 }
 
-.ingredient-card .amount {
-    font-weight: 600;
+.ingredient-name {
+    font-size: 1rem;
     color: var(--text-main);
+    font-weight: 500;
+}
+
+.ingredient-dots {
+    flex-grow: 1;
+    border-bottom: 1px dotted var(--text-muted);
+    opacity: 0.3;
+    margin: 0 0.8rem 0.3rem 0.8rem;
+}
+
+.ingredient-amount {
+    font-size: 1rem;
+    color: var(--text-main);
+    font-weight: 600;
 }
 
 .seasoning-list {
@@ -469,53 +498,86 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Steps Timeline */
-.step-item {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
+/* Steps Timeline Redesign */
+.detail-steps {
+    padding-left: 0.5rem;
+    padding-top: 1rem;
 }
 
-.step-number {
-    flex: 0 0 30px;
-    height: 30px;
+.step-timeline-item {
+    position: relative;
+    padding-left: 2rem;
+    padding-bottom: 2.5rem;
+}
+
+.step-line {
+    position: absolute;
+    left: 7px;
+    top: 24px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--glass-border);
+    z-index: 1;
+}
+
+.step-timeline-item:last-child .step-line {
+    display: none;
+}
+
+.step-dot {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
+    z-index: 2;
+    background: var(--text-muted);
+    border: 3px solid var(--bg-main);
+    box-shadow: 0 0 0 1px var(--glass-border);
+}
+
+.step-prep .step-dot { background: #10b981; }
+.step-cook .step-dot { background: #ef4444; }
+.step-timer .step-dot { background: #3b82f6; }
+.step-judge .step-dot { background: #f59e0b; }
+
+.step-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+}
+
+.step-num {
+    font-size: 1.1rem;
     font-weight: 800;
-    font-size: 0.9rem;
-    color: #fff;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
 }
 
-.type-prep .step-number { background: #10b981; }
-.type-prep .step-content { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); }
-
-.type-cook .step-number { background: #ef4444; }
-.type-cook .step-content { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
-
-.type-timer .step-number { background: #3b82f6; }
-.type-timer .step-content { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); }
-
-.type-judge .step-number { background: #f59e0b; }
-.type-judge .step-content { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); }
-
-.step-content {
-    flex: 1;
-    padding: 1.2rem;
-    border-radius: 16px;
+.step-tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
 }
 
-.step-content p {
-    font-size: 1rem;
+.step-prep .step-tag { color: #059669; background: #d1fae5; }
+.step-cook .step-tag { color: #dc2626; background: #fee2e2; }
+.step-timer .step-tag { color: #2563eb; background: #dbeafe; }
+.step-judge .step-tag { color: #d97706; background: #fef3c7; }
+
+.step-text {
+    font-size: 1.05rem;
     line-height: 1.6;
     color: var(--text-main);
-    margin-bottom: 0;
+    margin-bottom: 0.8rem;
 }
 
-.step-content .step-inline-media {
-    margin-top: 1rem;
+.step-inline-media {
     width: 100%;
-    height: auto;
     border-radius: 12px;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }

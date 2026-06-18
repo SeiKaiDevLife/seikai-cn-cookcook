@@ -183,12 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function openDetail(recipe) {
         let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
         
-        let ingsHtml = recipe.materials?.ingredients?.map(ing => 
-            `<div class="ingredient-card">
-                <span class="name">${ing.name}</span>
-                <span class="amount">${ing.amount}</span>
-            </div>`
-        ).join('') || '';
+        let ingsHtml = '';
+        if (recipe.materials?.ingredients?.length > 0) {
+            ingsHtml = `<div class="ingredient-list-premium">` + 
+                recipe.materials.ingredients.map(ing => 
+                `<div class="ingredient-row">
+                    <span class="ingredient-name">${ing.name}</span>
+                    <div class="ingredient-dots"></div>
+                    <span class="ingredient-amount">${ing.amount}</span>
+                </div>`
+            ).join('') + `</div>`;
+        }
         
         let seasHtml = recipe.materials?.seasonings?.map(s => 
             `<div class="seasoning-chip">${s}</div>`
@@ -196,7 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let tutorialsHtml = '';
         if (recipe.tutorials && recipe.tutorials.urls && recipe.tutorials.urls.length > 0) {
-            tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3><div class="tutorial-scroll">`;
+            tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3>
+                <div class="tutorial-scroll-container">
+                    <div class="tutorial-scroll">`;
             recipe.tutorials.urls.forEach(url => {
                 if (recipe.tutorials.type === 'video') {
                     tutorialsHtml += `<video controls class="step-media" src="${url}"></video>`;
@@ -204,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tutorialsHtml += `<img class="step-media" src="${url}" alt="tutorial">`;
                 }
             });
-            tutorialsHtml += `</div></div>`;
+            tutorialsHtml += `</div></div></div>`;
         }
 
         let stepsHtml = recipe.steps?.map((step, idx) => {
@@ -213,17 +220,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '';
             
             let typeName = '';
+            let typeClass = `step-${step.type}`;
             if(step.type === 'prep') typeName = '备菜';
             else if(step.type === 'cook') typeName = '烧菜';
             else if(step.type === 'timer') typeName = `计时 ${step.timerSeconds}s`;
             else if(step.type === 'judge') typeName = '判断';
 
             return `
-                <div class="step-item type-${step.type}">
-                    <div class="step-number">${idx + 1}</div>
+                <div class="step-timeline-item ${typeClass}">
+                    <div class="step-line"></div>
+                    <div class="step-dot"></div>
                     <div class="step-content">
-                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem; font-weight:600;">[${typeName}]</div>
-                        <p>${step.content}</p>
+                        <div class="step-header">
+                            <span class="step-num">Step ${idx + 1}</span>
+                            <span class="step-tag">${typeName}</span>
+                        </div>
+                        <p class="step-text">${step.content}</p>
                         ${mediaHtml}
                     </div>
                 </div>
@@ -237,26 +249,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="detail-meta">
                     <div class="recipe-author-lg">
                         <img src="${authorAvatar}" alt="author">
-                        <span style="font-weight:600; color:var(--text-main);">${recipe.author}</span>
-                        <span style="margin-left:0.5rem; color:var(--text-muted);">${recipe.createTime}</span>
+                        <span class="author-name">${recipe.author}</span>
+                        <span class="meta-date">${recipe.createTime}</span>
                     </div>
                 </div>
                 
                 ${tutorialsHtml}
 
                 <div class="detail-section">
-                    <h3>食材</h3>
-                    <div class="ingredient-grid">${ingsHtml}</div>
+                    <h3>食材清单</h3>
+                    ${ingsHtml}
                 </div>
                 
-                <div class="detail-section">
-                    <h3>佐料</h3>
+                <div class="detail-section" style="margin-top: 1.5rem;">
+                    <h3>所需佐料</h3>
                     <div class="seasoning-list">${seasHtml}</div>
                 </div>
 
-                <div class="detail-section">
+                <div class="detail-section" style="margin-top: 2rem;">
                     <h3>制作步骤</h3>
-                    ${stepsHtml}
+                    <div class="detail-steps">
+                        ${stepsHtml}
+                    </div>
                 </div>
             </div>
         `;
