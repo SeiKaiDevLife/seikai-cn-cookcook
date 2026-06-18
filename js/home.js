@@ -6,11 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    const currentUser = JSON.parse(userStr);
-    // Top nav elements
+    // UI Elements
     const searchInput = document.getElementById('searchInput');
-    const sortBtns = document.querySelectorAll('.sort-btn');
+    const sortModeSelect = document.getElementById('sortMode');
+    const sortOrderBtn = document.getElementById('sortOrderBtn');
     const recipeGrid = document.getElementById('recipeGrid');
+    const topBar = document.getElementById('topBar');
+    const modal = document.getElementById('recipeModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    const recipeDetailContainer = document.getElementById('recipeDetailContainer');
 
     // Tab Switching Logic
     const tabItems = document.querySelectorAll('.tab-item:not(.publish-tab)');
@@ -22,34 +26,66 @@ document.addEventListener('DOMContentLoaded', () => {
             tab.classList.add('active');
             
             viewSections.forEach(v => v.classList.remove('active'));
-            const targetView = document.getElementById(tab.dataset.view);
+            const targetViewId = tab.dataset.view;
+            const targetView = document.getElementById(targetViewId);
             if (targetView) targetView.classList.add('active');
+            
+            // Only show top bar on home view
+            if (targetViewId === 'homeView') {
+                topBar.style.display = 'flex';
+            } else {
+                topBar.style.display = 'none';
+            }
         });
     });
 
-    // Profile handling (mocked for now, logout could be placed in Profile view later)
-    // Removed old top navbar user profile references to match new UI
-
     // Load Data
     let recipes = window.RECIPE_DATA || [];
-    let currentSort = 'default';
+    
+    // State
+    let currentSortMode = 'time'; // time, difficulty, duration, proficiency
+    let currentSortOrder = 'desc'; // asc, desc
     let searchQuery = '';
 
-    const modal = document.getElementById('recipeModal');
-    const closeModalBtn = document.getElementById('closeModal');
-    const recipeDetailContainer = document.getElementById('recipeDetailContainer');
-
-    function renderRecipes() {
-        let filtered = recipes.filter(r => r.name.includes(searchQuery));
+    // Render Grid
+    function renderGrid() {
+        if (!recipeGrid) return;
         
-        if (currentSort === 'time') {
-            filtered.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-        } else if (currentSort === 'hot') {
-            // Placeholder: no actual hotness data in Phase 1 as per requirements
-        }
+        let filtered = recipes.filter(r => r.name.includes(searchQuery));
+
+        // Sort Logic
+        filtered.sort((a, b) => {
+            let valA, valB;
+            switch(currentSortMode) {
+                case 'time':
+                    valA = new Date(a.createTime).getTime();
+                    valB = new Date(b.createTime).getTime();
+                    break;
+                case 'difficulty':
+                    valA = a.difficulty;
+                    valB = b.difficulty;
+                    break;
+                case 'duration':
+                    valA = a.durationMin;
+                    valB = b.durationMin;
+                    break;
+                case 'proficiency':
+                    // Just take seikai's proficiency for sorting demo
+                    valA = a.cookedStats ? (a.cookedStats.seikai || 0) : 0;
+                    valB = b.cookedStats ? (b.cookedStats.seikai || 0) : 0;
+                    break;
+                default:
+                    valA = 0; valB = 0;
+            }
+            
+            if (currentSortOrder === 'desc') {
+                return valB - valA;
+            } else {
+                return valA - valB;
+            }
+        });
 
         recipeGrid.innerHTML = '';
-        
         if (filtered.length === 0) {
             recipeGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">暂无找到相关菜谱</div>';
             return;
@@ -59,14 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
             
-            // Generate difficulty stars
             let starsHtml = '';
-            for (let i = 0; i < recipe.difficulty; i++) {
-                starsHtml += '<i class="fa-solid fa-star" style="color: #f59e0b;"></i>';
+            for(let i=0; i<5; i++) {
+                if(i < recipe.difficulty) starsHtml += '<i class="fa-solid fa-star"></i>';
+                else starsHtml += '<i class="fa-regular fa-star"></i>';
             }
 
-            // Default avatars for hardcoded users
-            let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
+            let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
 
             card.innerHTML = `
                 <div class="recipe-cover-wrap">
@@ -77,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="recipe-title">${recipe.name}</h3>
                     <div class="recipe-meta">
                         <div class="recipe-author">
-                            <img src="${authorAvatar}" alt="author">
+                            <img src="${authorAvatar}" alt="author" onerror="this.src='https://via.placeholder.com/18'">
                             <span>${recipe.author}</span>
                         </div>
                         <div class="recipe-stats">
@@ -86,151 +121,131 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
-            card.addEventListener('click', () => openRecipe(recipe));
+            
+            card.addEventListener('click', () => openDetail(recipe));
             recipeGrid.appendChild(card);
         });
     }
 
-    // Search and Sort Event Listeners
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.trim();
-        renderRecipes();
-    });
-
-    sortBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            sortBtns.forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentSort = e.target.dataset.sort;
-            renderRecipes();
+    // Events
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim();
+            renderGrid();
         });
-    });
+    }
 
-    // Modal logic
-    function openRecipe(recipe) {
-        let ingredientsHtml = '';
-        if (recipe.materials && recipe.materials.ingredients) {
-            ingredientsHtml += recipe.materials.ingredients.map(ing => `
-                <div class="ingredient-item">
-                    <span>${ing.name}</span>
-                    <span class="amount">${ing.amount}</span>
-                </div>
-            `).join('');
-        }
-
-        let seasoningsHtml = '';
-        if (recipe.materials && recipe.materials.seasonings) {
-            seasoningsHtml += recipe.materials.seasonings.map(s => `
-                <div class="ingredient-item">
-                    <span>${s}</span>
-                </div>
-            `).join('');
-        }
-
-        const typeLabels = {
-            'prep': '备菜',
-            'cook': '烧菜',
-            'timer': '计时',
-            'judge': '判断'
-        };
-
-        let stepsHtml = recipe.steps.map((step, idx) => {
-            let mediaHtml = '';
-            if (step.media) {
-                if (step.media.endsWith('.mp4')) {
-                    mediaHtml = `<video src="${step.media}" controls class="step-media"></video>`;
-                } else {
-                    mediaHtml = `<img src="${step.media}" alt="Step ${idx+1}" class="step-media">`;
-                }
+    if (sortModeSelect) {
+        sortModeSelect.addEventListener('change', (e) => {
+            currentSortMode = e.target.value;
+            renderGrid();
+        });
+    }
+    
+    if (sortOrderBtn) {
+        sortOrderBtn.addEventListener('click', () => {
+            if (currentSortOrder === 'desc') {
+                currentSortOrder = 'asc';
+                sortOrderBtn.dataset.order = 'asc';
+                sortOrderBtn.innerHTML = '<i class="fa-solid fa-arrow-up-wide-short"></i>';
+            } else {
+                currentSortOrder = 'desc';
+                sortOrderBtn.dataset.order = 'desc';
+                sortOrderBtn.innerHTML = '<i class="fa-solid fa-arrow-down-wide-short"></i>';
             }
-            
-            let timerHtml = step.type === 'timer' && step.timerSeconds ? ` <span style="color: #60a5fa;"><i class="fa-regular fa-clock"></i> ${Math.floor(step.timerSeconds / 60)}分${step.timerSeconds % 60}秒</span>` : '';
+            renderGrid();
+        });
+    }
 
-            return `
-                <div class="step-item type-${step.type}">
-                    <h4>步骤 ${idx + 1} <span style="font-size: 0.8rem; font-weight: normal; margin-left: 0.5rem; opacity: 0.8;">[${typeLabels[step.type]}]</span></h4>
-                    <p>${step.content}${timerHtml}</p>
-                    ${mediaHtml}
-                </div>
-            `;
-        }).join('');
+    // Modal Logic
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        });
+    }
 
-        let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
+    function openDetail(recipe) {
+        let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
+        
+        let ingsHtml = recipe.materials?.ingredients?.map(ing => 
+            `<span class="ingredient-item">${ing.name} <span class="amount">${ing.amount}</span></span>`
+        ).join('') || '';
+        
+        let seasHtml = recipe.materials?.seasonings?.map(s => 
+            `<span class="ingredient-item">${s}</span>`
+        ).join('') || '';
 
         let tutorialsHtml = '';
         if (recipe.tutorials && recipe.tutorials.urls) {
+            tutorialsHtml = `<div class="detail-section"><h3>参考教程</h3><div style="display:flex; flex-direction:column; gap:1rem;">`;
             recipe.tutorials.urls.forEach(url => {
                 if (recipe.tutorials.type === 'video') {
-                    tutorialsHtml += `<video src="${url}" controls class="step-media" style="margin-bottom:1rem;"></video>`;
+                    tutorialsHtml += `<video controls class="step-media" src="${url}"></video>`;
                 } else {
-                    tutorialsHtml += `<img src="${url}" class="step-media" style="margin-bottom:1rem;">`;
+                    tutorialsHtml += `<img class="step-media" src="${url}" alt="tutorial">`;
                 }
             });
+            tutorialsHtml += `</div></div>`;
         }
 
+        let stepsHtml = recipe.steps?.map((step, idx) => {
+            let mediaHtml = step.media ? 
+                (step.media.endsWith('.mp4') ? `<video controls class="step-media" src="${step.media}"></video>` : `<img class="step-media" src="${step.media}" alt="step media">`) 
+                : '';
+            
+            let typeName = '';
+            if(step.type === 'prep') typeName = '备菜';
+            else if(step.type === 'cook') typeName = '烧菜';
+            else if(step.type === 'timer') typeName = `计时 ${step.timerSeconds}s`;
+            else if(step.type === 'judge') typeName = '判断';
+
+            return `
+                <div class="step-item type-${step.type}">
+                    <div style="font-size:0.8rem; font-weight:bold; margin-bottom:0.5rem; opacity:0.8;">[${typeName}] 步骤 ${idx + 1}</div>
+                    <p>${step.content}</p>
+                    ${mediaHtml}
+                </div>
+            `;
+        }).join('') || '';
+
         recipeDetailContainer.innerHTML = `
-            <img src="${recipe.coverUrl}" class="detail-cover">
+            <img src="${recipe.coverUrl}" class="detail-cover" alt="cover">
             <div class="detail-body">
                 <h2 class="detail-title">${recipe.name}</h2>
                 <div class="detail-meta">
-                    <div class="recipe-author">
-                        <img src="${authorAvatar}" alt="author">
+                    <div class="recipe-author" style="width:100%; margin-bottom:0.5rem;">
+                        <img src="${authorAvatar}" alt="author" onerror="this.src='https://via.placeholder.com/28'">
                         <span>${recipe.author}</span>
-                    </div>
-                    <span><i class="fa-regular fa-clock"></i> 耗时: ${recipe.durationMin} 分钟</span>
-                    <span><i class="fa-solid fa-fire"></i> 难度: ${recipe.difficulty} 星</span>
-                    <span><i class="fa-solid fa-calendar"></i> ${recipe.createTime}</span>
-                </div>
-                
-                ${tutorialsHtml ? `
-                <div class="detail-section">
-                    <h3>参考教程</h3>
-                    <div class="tutorials-container">
-                        ${tutorialsHtml}
+                        <span style="margin-left:auto;">${recipe.createTime}</span>
                     </div>
                 </div>
-                ` : ''}
+                
+                ${tutorialsHtml}
+
+                <div class="detail-section">
+                    <h3>食材</h3>
+                    <div class="ingredient-list">${ingsHtml}</div>
+                </div>
                 
                 <div class="detail-section">
-                    <h3>食材清单</h3>
-                    <div class="ingredient-list">
-                        ${ingredientsHtml}
-                    </div>
+                    <h3>佐料</h3>
+                    <div class="ingredient-list">${seasHtml}</div>
                 </div>
 
                 <div class="detail-section">
-                    <h3>所需佐料</h3>
-                    <div class="ingredient-list">
-                        ${seasoningsHtml}
-                    </div>
-                </div>
-                
-                <div class="detail-section">
                     <h3>制作步骤</h3>
-                    <div class="steps-list">
-                        ${stepsHtml}
-                    </div>
+                    ${stepsHtml}
                 </div>
             </div>
         `;
         
+        modal.style.display = 'flex';
+        // force reflow
+        void modal.offsetWidth;
         modal.classList.add('show');
     }
 
-    closeModalBtn.addEventListener('click', () => {
-        modal.classList.remove('show');
-        // Pause any playing videos
-        const videos = modal.querySelectorAll('video');
-        videos.forEach(v => v.pause());
-    });
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModalBtn.click();
-        }
-    });
-
-    // Init
-    renderRecipes();
+    // Initial render
+    renderGrid();
 });

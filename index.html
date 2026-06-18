@@ -16,23 +16,19 @@
                 <h1>CookCook</h1>
                 <p>探索你的美食世界</p>
             </div>
-            <form id="loginForm" class="login-form">
+            <form id="loginForm" class="auth-form">
                 <div class="input-group">
-                    <input type="text" id="username" placeholder=" " required autocomplete="off">
-                    <label for="username">用户名</label>
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="username" placeholder="用户名 (seikai / echo)" required>
                 </div>
                 <div class="input-group">
-                    <input type="password" id="password" placeholder=" " required>
-                    <label for="password">密码</label>
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" placeholder="密码" required>
                 </div>
-                <button type="submit" class="btn-primary">
-                    <span class="btn-text">立即进入</span>
-                    <div class="loader"></div>
-                </button>
+                <button type="submit" class="primary-btn">登录</button>
             </form>
             <div class="footer-links">
                 <a href="#">忘记密码？</a>
-                <a href="#">注册账号</a>
             </div>
         </div>
     </div>

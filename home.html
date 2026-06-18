@@ -4,19 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CookCook</title>
-    <link rel="stylesheet" href="css/base.css?v=1.0.3">
-    <link rel="stylesheet" href="css/home.css?v=1.0.3">
+    <link rel="stylesheet" href="css/base.css?v=1.0.4">
+    <link rel="stylesheet" href="css/home.css?v=1.0.4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="js/data.js?v=1.0.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/data.js?v=1.0.4"></script>
 </head>
 <body>
     <!-- Top Action Bar -->
-    <header class="top-bar">
+    <header class="top-bar" id="topBar">
         <button class="filter-btn"><i class="fa-solid fa-filter"></i></button>
         <div class="search-box">
             <i class="fa-solid fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索你感兴趣的菜谱...">
+            <input type="text" id="searchInput" placeholder="搜索菜谱...">
+        </div>
+        <div class="sort-container">
+            <select id="sortMode" class="sort-select">
+                <option value="time">时间</option>
+                <option value="difficulty">难度</option>
+                <option value="duration">时长</option>
+                <option value="proficiency">熟练度</option>
+            </select>
+            <button id="sortOrderBtn" class="sort-order-btn" data-order="desc">
+                <i class="fa-solid fa-arrow-down-wide-short"></i>
+            </button>
         </div>
     </header>
 
@@ -24,12 +35,6 @@
     <main class="container">
         <!-- Home / 首页 (瀑布流区) -->
         <div id="homeView" class="view-section active">
-            <div class="sort-controls">
-                <button class="sort-btn active" data-sort="default">综合排序</button>
-                <button class="sort-btn" data-sort="time">最新发布</button>
-                <button class="sort-btn" data-sort="hot">最多热度</button>
-            </div>
-            
             <div class="recipe-masonry" id="recipeGrid">
                 <!-- Recipes will be dynamically injected here -->
             </div>
@@ -37,7 +42,27 @@
 
         <!-- Ingredients / 食材 (待开发) -->
         <div id="ingredientsView" class="view-section">
-            <h2 style="text-align:center; margin-top:2rem;">食材页（开发中）</h2>
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                <h2>食材匹配功能开发中...</h2>
+            </div>
+        </div>
+        
+        <div id="publishView" class="view-section">
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                <h2>发布功能开发中...</h2>
+            </div>
+        </div>
+        
+        <div id="menuView" class="view-section">
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                <h2>点菜清单开发中...</h2>
+            </div>
+        </div>
+        
+        <div id="profileView" class="view-section">
+            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                <h2>个人中心开发中...</h2>
+            </div>
         </div>
     </main>
 
@@ -51,16 +76,16 @@
             <i class="fa-solid fa-carrot"></i>
             <span>食材</span>
         </div>
-        <div class="tab-item publish-tab">
+        <div class="tab-item publish-tab" data-view="publishView">
             <div class="publish-btn">
                 <i class="fa-solid fa-plus"></i>
             </div>
         </div>
-        <div class="tab-item">
+        <div class="tab-item" data-view="menuView">
             <i class="fa-solid fa-list-check"></i>
             <span>点菜</span>
         </div>
-        <div class="tab-item">
+        <div class="tab-item" data-view="profileView">
             <i class="fa-solid fa-user"></i>
             <span>我的</span>
         </div>
@@ -74,6 +99,6 @@
         </div>
     </div>
 
-    <script src="js/home.js?v=1.0.3"></script>
+    <script src="js/home.js?v=1.0.4"></script>
 </body>
 </html>
