@@ -29,10 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const recipeDetailContainer = document.getElementById('recipeDetailContainer');
 
     function renderRecipes() {
-        let filtered = recipes.filter(r => r.title.includes(searchQuery) || r.description.includes(searchQuery));
+        let filtered = recipes.filter(r => r.name.includes(searchQuery));
         
         if (currentSort === 'time') {
-            filtered.sort((a, b) => b.createTime - a.createTime);
+            filtered.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
         } else if (currentSort === 'hot') {
             // Placeholder: no actual hotness data in Phase 1 as per requirements
         }
@@ -58,10 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
 
             card.innerHTML = `
-                <img src="${recipe.coverUrl}" alt="${recipe.title}" class="recipe-cover">
+                <img src="${recipe.coverUrl}" alt="${recipe.name}" class="recipe-cover">
                 <div class="recipe-info">
-                    <h3 class="recipe-title">${recipe.title}</h3>
-                    <p class="recipe-desc">${recipe.description}</p>
+                    <h3 class="recipe-title">${recipe.name}</h3>
                     <div class="recipe-meta">
                         <div class="recipe-author">
                             <img src="${authorAvatar}" alt="author">
@@ -144,10 +143,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let authorAvatar = recipe.author === 'echo' ? 'public/avatars/echo.webp' : 'public/avatars/seikai.webp';
 
+        let tutorialsHtml = '';
+        if (recipe.tutorials && recipe.tutorials.urls) {
+            recipe.tutorials.urls.forEach(url => {
+                if (recipe.tutorials.type === 'video') {
+                    tutorialsHtml += `<video src="${url}" controls class="step-media" style="margin-bottom:1rem;"></video>`;
+                } else {
+                    tutorialsHtml += `<img src="${url}" class="step-media" style="margin-bottom:1rem;">`;
+                }
+            });
+        }
+
         recipeDetailContainer.innerHTML = `
             <img src="${recipe.coverUrl}" class="detail-cover">
             <div class="detail-body">
-                <h2 class="detail-title">${recipe.title}</h2>
+                <h2 class="detail-title">${recipe.name}</h2>
                 <div class="detail-meta">
                     <div class="recipe-author">
                         <img src="${authorAvatar}" alt="author">
@@ -155,7 +165,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <span><i class="fa-regular fa-clock"></i> 耗时: ${recipe.durationMin} 分钟</span>
                     <span><i class="fa-solid fa-fire"></i> 难度: ${recipe.difficulty} 星</span>
+                    <span><i class="fa-solid fa-calendar"></i> ${recipe.createTime}</span>
                 </div>
+                
+                ${tutorialsHtml ? `
+                <div class="detail-section">
+                    <h3>参考教程</h3>
+                    <div class="tutorials-container">
+                        ${tutorialsHtml}
+                    </div>
+                </div>
+                ` : ''}
                 
                 <div class="detail-section">
                     <h3>食材清单</h3>
