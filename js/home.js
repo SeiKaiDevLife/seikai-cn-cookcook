@@ -210,10 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 tagsHtml += `<div class="match-ing-tag missing">${m} <i class="fa-solid fa-xmark"></i></div>`;
             });
 
+            let isInCart = cartRecipeIds.includes(recipe.id);
+            card.className = isInCart ? 'recipe-card in-cart' : 'recipe-card';
             card.innerHTML = `
-                <div class="match-list-item" onclick="window.openDetail(recipes.find(x => x.id === '${recipe.id}'))" style="position:relative;">
-                ${cartRecipeIds.includes(recipe.id) ? 
-                    `<button class="added-to-cart-btn" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-check"></i></button>` :
+                <div class="match-list-item ${isInCart ? 'in-cart' : ''}" onclick="window.openDetail(recipes.find(x => x.id === '${recipe.id}'))" style="position:relative;">
+                ${isInCart ? 
+                    `<button class="add-to-cart-btn is-in-cart" onclick="event.stopPropagation(); window.removeFromCart('${recipe.id}');" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-xmark"></i></button>` :
                     `<button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-plus"></i></button>`
                 }
                 <div class="match-list-left">
@@ -514,7 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filtered.forEach(recipe => {
             const card = document.createElement('div');
-            card.className = 'recipe-card';
+            let isInCart = cartRecipeIds.includes(recipe.id);
+            card.className = isInCart ? 'recipe-card in-cart' : 'recipe-card';
             
             let starsHtml = '';
             for(let i=0; i<5; i++) {
@@ -536,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="recipe-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <span>${recipe.name}</span>
                         ${cartRecipeIds.includes(recipe.id) ? 
-                            `<button class="added-to-cart-btn"><i class="fa-solid fa-check"></i></button>` :
+                            `<button class="add-to-cart-btn is-in-cart" onclick="event.stopPropagation(); window.removeFromCart('${recipe.id}');"><i class="fa-solid fa-xmark"></i></button>` :
                             `<button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')"><i class="fa-solid fa-plus"></i></button>`
                         }
                     </div>
@@ -1024,64 +1027,129 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             });
             html += `</div>
-                <button class="primary-btn" onclick="window.startCooking()" style="margin-top:2rem; background:#ef4444;">确认顺序，进入后厨</button>
+                <button class="primary-btn" onclick="window.startCooking()" style="margin-top:2rem; background:#ef4444;">确认顺序，开始制作</button>
             </div>`;
+            root.innerHTML = html;
+        } else if (guideState === 'MODE_SELECT') {
+            if (currentDishIdx >= cookingQueue.length) return;
+            let dish = cookingQueue[currentDishIdx];
+            let html = `
+                <div class="guide-fullscreen" style="justify-content:center; align-items:center; background:#FFF; padding:5%;">
+                    <h2 style="font-size:1.8rem; margin-bottom:2.5rem; font-weight:800; text-align:center;">
+                        你想怎么做 <span style="color:#059669;">${dish.recipe.name}</span>？
+                    </h2>
+                    <div style="display:flex; flex-direction:column; gap:1.2rem; width:100%; max-width:300px;">
+                        <button class="primary-btn" style="background:#000;" onclick="window.selectMode('tutorial')">仅看教程</button>
+                        <button class="primary-btn" style="background:#000;" onclick="window.selectMode('steps')">仅看图文步骤</button>
+                        <button class="primary-btn" style="background:#059669;" onclick="window.selectMode('both')">教程 + 图文步骤</button>
+                    </div>
+                </div>
+            `;
             root.innerHTML = html;
         } else if (guideState === 'COOKING') {
             if (currentDishIdx >= cookingQueue.length) return;
             let dish = cookingQueue[currentDishIdx];
             let step = dish.steps[currentStepIdx];
             
-            let prevStep = currentStepIdx > 0 ? dish.steps[currentStepIdx - 1] : null;
-            let nextStep = currentStepIdx < dish.steps.length - 1 ? dish.steps[currentStepIdx + 1] : null;
-
-            let typeClass = 'bg-cook';
-            let typeName = '烹饪';
-            if(step.type === 'timer') { typeClass = 'bg-timer'; typeName = '计时'; }
-            if(step.type === 'judge') { typeClass = 'bg-judge'; typeName = '判断'; }
+            let html = '';
             
-            let extraHtml = '';
-            if (step.type === 'timer') {
-                extraHtml = `
-                    <div class="timer-unified-btn" id="unifiedTimerBtn" onclick="window.startStepTimer(${step.timerSeconds})">
-                        <div class="timer-unified-progress" id="timerProgressBar" style="width: 100%;"></div>
-                        <div class="timer-unified-text" id="timerDisplay">${step.timerSeconds}s 开始倒计时</div>
+            let tutorialsHtml = '';
+            if (dish.recipe.tutorials && dish.recipe.tutorials.urls) {
+                dish.recipe.tutorials.urls.forEach(url => {
+                    let isVideo = dish.recipe.tutorials.type === 'video' || url.endsWith('.mp4');
+                    if (isVideo) {
+                        tutorialsHtml += `<video controls autoplay class="carousel-media" src="${url}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;"></video>`;
+                    } else {
+                        tutorialsHtml += `<img class="carousel-media" src="${url}" style="height:100%; width:100%; object-fit:contain; background:#000; flex:0 0 100%;">`;
+                    }
+                });
+            }
+
+            if (dish.mode === 'tutorial') {
+                html = `
+                    <div class="guide-fullscreen">
+                        <div class="cooking-header">
+                            <div class="cooking-dish-name">${dish.recipe.name}</div>
+                            <div class="cooking-progress-text">第 ${currentDishIdx+1}/${cookingQueue.length} 道菜 | 纯教程模式</div>
+                        </div>
+                        <div style="flex:1; overflow-y:auto; background:#000; display:flex; flex-direction:column;">
+                            <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; flex:1;">${tutorialsHtml}</div>
+                        </div>
+                        <div class="cooking-action" style="background:#FFF;">
+                            <button class="primary-btn" style="background:#ef4444;" onclick="window.finishDish()">这道菜做好了 <i class="fa-solid fa-check"></i></button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                let prevStep = currentStepIdx > 0 ? dish.steps[currentStepIdx - 1] : null;
+                let nextStep = currentStepIdx < dish.steps.length - 1 ? dish.steps[currentStepIdx + 1] : null;
+
+                let typeClass = 'bg-cook';
+                let nextTypeClass = 'bg-cook-dull';
+                let typeName = '烹饪';
+                if(step.type === 'timer') { typeClass = 'bg-timer'; typeName = '计时'; }
+                if(step.type === 'judge') { typeClass = 'bg-judge'; typeName = '判断'; }
+
+                if (nextStep) {
+                    if(nextStep.type === 'timer') nextTypeClass = 'bg-timer-dull';
+                    if(nextStep.type === 'judge') nextTypeClass = 'bg-judge-dull';
+                }
+                
+                let extraHtml = '';
+                if (step.type === 'timer') {
+                    extraHtml = `
+                        <div class="timer-unified-btn" id="unifiedTimerBtn" onclick="window.startStepTimer(${step.timerSeconds})">
+                            <div class="timer-unified-progress" id="timerProgressBar" style="width: 100%;"></div>
+                            <div class="timer-unified-text" id="timerDisplay">${step.timerSeconds}s 开始倒计时</div>
+                        </div>
+                    `;
+                }
+                
+                let mediaSection = dish.mode === 'both' ? `
+                    <div style="height: 200px; background:#000; flex-shrink:0; display:flex; overflow-x:auto; scroll-snap-type:x mandatory;">
+                        ${tutorialsHtml}
+                    </div>
+                ` : '';
+
+                html = `
+                    <div class="guide-fullscreen">
+                        <div class="cooking-header">
+                            <div class="cooking-dish-name">${dish.recipe.name}</div>
+                            <div class="cooking-progress-text">第 ${currentDishIdx+1}/${cookingQueue.length} 道菜 | 步骤 ${currentStepIdx+1}/${dish.steps.length}</div>
+                        </div>
+                        ${mediaSection}
+                        <div class="cooking-cards-wrapper">
+                            ${prevStep ? `
+                            <div class="cooking-card cooking-card-prev">
+                                <div class="step-content-box">${prevStep.content}</div>
+                            </div>` : ''}
+                            
+                            <div class="cooking-card cooking-card-current ${typeClass}">
+                                <div class="cooking-step-type">${typeName}</div>
+                                <div class="step-content-box">
+                                    <div class="cooking-step-content">${step.content}</div>
+                                </div>
+                                ${extraHtml}
+                            </div>
+                            
+                            ${nextStep ? `
+                            <div class="cooking-card cooking-card-next ${nextTypeClass}">
+                                <div class="step-content-box">${nextStep.content}</div>
+                            </div>` : ''}
+                        </div>
+                        <div class="cooking-action">
+                            <div class="swipe-hint" onclick="window.finishStep()">
+                                <div class="swipe-arrows">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </div>
+                                <span>向左滑动进入下一步</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
-            
-            let html = `
-                <div class="guide-fullscreen">
-                    <div class="cooking-header">
-                        <div class="cooking-dish-name">${dish.recipe.name}</div>
-                        <div class="cooking-progress-text">第 ${currentDishIdx+1}/${cookingQueue.length} 道菜 | 步骤 ${currentStepIdx+1}/${dish.steps.length}</div>
-                    </div>
-                    <div class="cooking-cards-wrapper">
-                        ${prevStep ? `
-                        <div class="cooking-card cooking-card-prev">
-                            <div class="step-content-box">${prevStep.content}</div>
-                        </div>` : ''}
-                        
-                        <div class="cooking-card cooking-card-current ${typeClass}">
-                            <div class="cooking-step-type">${typeName}</div>
-                            <div class="step-content-box">
-                                <div class="cooking-step-content">${step.content}</div>
-                            </div>
-                            ${extraHtml}
-                        </div>
-                        
-                        ${nextStep ? `
-                        <div class="cooking-card cooking-card-next">
-                            <div class="step-content-box">${nextStep.content}</div>
-                        </div>` : ''}
-                    </div>
-                    <div class="cooking-action">
-                        <button class="finish-step-btn" onclick="window.finishStep()">
-                            完成该步骤，下一步 <i class="fa-solid fa-xmark" style="font-size:1.2rem; margin-left:0.5rem; opacity:0.8;"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
             root.innerHTML = html;
         } else if (guideState === 'DONE') {
             let html = `
@@ -1149,8 +1217,8 @@ document.addEventListener('DOMContentLoaded', () => {
         cookingQueue = cartRecipeIds.map(id => {
             let r = recipes.find(x => x.id === id);
             let steps = r.steps.filter(s => s.type !== 'prep');
-            return { recipe: r, steps: steps };
-        }).filter(q => q.steps.length > 0);
+            return { recipe: r, steps: steps, mode: 'steps' };
+        }).filter(q => q.steps.length > 0 || (q.recipe.tutorials && q.recipe.tutorials.urls && q.recipe.tutorials.urls.length > 0));
         
         if (cookingQueue.length === 0) {
             guideState = 'DONE';
@@ -1160,6 +1228,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentDishIdx = 0;
         currentStepIdx = 0;
+        guideState = 'MODE_SELECT';
+        renderGuide();
+    };
+
+    window.selectMode = function(mode) {
+        if (currentDishIdx < cookingQueue.length) {
+            cookingQueue[currentDishIdx].mode = mode;
+        }
         guideState = 'COOKING';
         renderGuide();
     };
@@ -1184,6 +1260,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     };
 
+    window.finishDish = function() {
+        let dish = cookingQueue[currentDishIdx];
+        let today = new Date().toISOString().split('T')[0];
+        if (!dish.recipe.cookedStats[today]) dish.recipe.cookedStats[today] = 0;
+        dish.recipe.cookedStats[today]++;
+        window.showToast(`✅ ${dish.recipe.name} 制作完成！`);
+        
+        currentDishIdx++;
+        currentStepIdx = 0;
+        
+        if (currentDishIdx >= cookingQueue.length) {
+            guideState = 'DONE';
+        } else {
+            guideState = 'MODE_SELECT';
+        }
+        
+        renderGuide();
+    };
+
     window.finishStep = function() {
         if (timerInterval) {
             clearInterval(timerInterval);
@@ -1194,18 +1289,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let dish = cookingQueue[currentDishIdx];
         
         if (currentStepIdx >= dish.steps.length) {
-            // Add cooked stats
-            let today = new Date().toISOString().split('T')[0];
-            if (!dish.recipe.cookedStats[today]) dish.recipe.cookedStats[today] = 0;
-            dish.recipe.cookedStats[today]++;
-            window.showToast(`✅ ${dish.recipe.name} 制作完成！`);
-            
-            currentDishIdx++;
-            currentStepIdx = 0;
-        }
-        
-        if (currentDishIdx >= cookingQueue.length) {
-            guideState = 'DONE';
+            window.finishDish();
+            return;
         }
         
         renderGuide();
