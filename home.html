@@ -126,6 +126,27 @@
         </div>
     </div>
 
+    <!-- Add Note Modal -->
+    <div class="modal" id="addNoteModal" style="z-index: 1005;">
+        <div class="modal-content" style="padding: 2rem; border-radius: 24px; background: var(--bg-main);">
+            <button class="close-btn" id="closeNoteModal" style="background: rgba(0,0,0,0.05);">&times;</button>
+            <h2 style="margin-bottom: 1.5rem; color: var(--text-main); font-weight: 800;">添加心得笔记</h2>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; font-weight:600;">选择步骤</label>
+                <select id="noteStepSelect" style="width:100%; padding: 0.8rem; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.02); outline:none; font-family:inherit;">
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; font-weight:600;">笔记内容</label>
+                <textarea id="noteContentInput" rows="4" style="width:100%; padding: 0.8rem; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.02); outline:none; resize:none;" placeholder="输入你的做菜心得..."></textarea>
+            </div>
+            
+            <button id="saveNoteBtn" style="width:100%; padding: 1rem; border-radius: 16px; background: var(--text-main); color: white; border:none; font-weight: bold; font-size: 1rem; cursor:pointer;">保存笔记 (临时生效)</button>
+        </div>
+    </div>
+
     <script src="js/home.js?v=1.0.4"></script>
 </body>
 </html>

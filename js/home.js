@@ -22,7 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeEditModalBtn = document.getElementById('closeEditModal');
     const saveEditBtn = document.getElementById('saveEditBtn');
     
+    const noteModal = document.getElementById('addNoteModal');
+    const closeNoteModalBtn = document.getElementById('closeNoteModal');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    
     let currentEditingRecipe = null;
+    let currentNoteRecipeId = null;
 
     // Tab Switching Logic
     const tabItems = document.querySelectorAll('.tab-item:not(.publish-tab)');
@@ -238,6 +243,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (closeNoteModalBtn) {
+        closeNoteModalBtn.addEventListener('click', () => {
+            noteModal.classList.remove('show');
+            setTimeout(() => { noteModal.style.display = 'none'; }, 300);
+        });
+    }
+
+    if (saveNoteBtn) {
+        saveNoteBtn.addEventListener('click', () => {
+            let r = recipes.find(x => x.id === currentNoteRecipeId);
+            if (!r) return;
+            
+            let stepId = document.getElementById('noteStepSelect').value;
+            let content = document.getElementById('noteContentInput').value.trim();
+            
+            if (stepId && content) {
+                if (!r.notes) r.notes = [];
+                r.notes.push({ stepId: stepId, author: userStr, content: content });
+                
+                noteModal.classList.remove('show');
+                setTimeout(() => { noteModal.style.display = 'none'; }, 300);
+                
+                openDetail(r);
+            } else {
+                alert("请选择步骤并填写笔记内容");
+            }
+        });
+    }
+
     // Expose functions for inline onclick handlers
     window.markCooked = function(recipeId) {
         let r = recipes.find(x => x.id === recipeId);
@@ -265,6 +299,23 @@ document.addEventListener('DOMContentLoaded', () => {
             editModal.style.display = 'block';
             void editModal.offsetWidth;
             editModal.classList.add('show');
+        }
+    };
+
+    window.openNoteModal = function(recipeId) {
+        let r = recipes.find(x => x.id === recipeId);
+        if (r && r.steps) {
+            currentNoteRecipeId = recipeId;
+            let select = document.getElementById('noteStepSelect');
+            select.innerHTML = r.steps.map((s, idx) => {
+                let text = s.content.length > 20 ? s.content.substring(0, 20) + '...' : s.content;
+                return `<option value="${s.id}">步骤 ${idx + 1}: ${text}</option>`;
+            }).join('');
+            document.getElementById('noteContentInput').value = '';
+            
+            noteModal.style.display = 'block';
+            void noteModal.offsetWidth;
+            noteModal.classList.add('show');
         }
     };
 
@@ -398,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-pen-to-square"></i>
                     <span>编辑</span>
                 </button>
-                <button class="action-btn" onclick="alert('笔记功能开发中')">
+                <button class="action-btn" onclick="window.openNoteModal('${recipe.id}')">
                     <i class="fa-solid fa-book-open"></i>
                     <span>笔记</span>
                 </button>
