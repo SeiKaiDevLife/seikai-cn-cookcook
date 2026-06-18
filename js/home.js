@@ -538,48 +538,71 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPubSteps();
     };
 
-    window.submitRecipe = function() {
-        let secPwdModal = document.getElementById('secPwdModal');
-        document.getElementById('secPwdInput').value = '';
-        secPwdModal.classList.add('show');
-        secPwdModal.style.display = 'flex';
+    let pendingOSSCallback = null;
+    window.runWithOSS = function(callback) {
+        if (ossClient) {
+            callback();
+        } else {
+            pendingOSSCallback = callback;
+            let secPwdModal = document.getElementById('secPwdModal');
+            document.getElementById('secPwdInput').value = '';
+            secPwdModal.classList.add('show');
+            secPwdModal.style.display = 'flex';
+        }
     };
     
     document.getElementById('cancelSecPwdBtn').addEventListener('click', () => {
         let secPwdModal = document.getElementById('secPwdModal');
         secPwdModal.classList.remove('show');
-        setTimeout(() => { secPwdModal.style.display = 'none'; }, 300);
+        setTimeout(() => { secPwdModal.style.display = 'none'; pendingOSSCallback = null; }, 300);
     });
     
     document.getElementById('confirmSecPwdBtn').addEventListener('click', async () => {
-        let pwd = document.getElementById('secPwdInput').value;
-        if (!pwd) return;
-        
-        // Initialize OSS
-        if (!ENCRYPTED_CREDENTIALS || ENCRYPTED_CREDENTIALS === "REPLACE_ME_WITH_ENCRYPTED_CREDENTIALS") {
-            alert("未配置OSS凭证！");
-            return;
+        if (!ossClient) {
+            let pwd = document.getElementById('secPwdInput').value;
+            if (!pwd) return;
+            if (!ENCRYPTED_CREDENTIALS || ENCRYPTED_CREDENTIALS === "REPLACE_ME_WITH_ENCRYPTED_CREDENTIALS") {
+                alert("未配置OSS凭证！"); return;
+            }
+            try {
+                const decryptedBytes = CryptoJS.AES.decrypt(ENCRYPTED_CREDENTIALS, pwd);
+                const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+                if (!decryptedText) throw new Error("解密失败");
+                const credentials = JSON.parse(decryptedText);
+                ossClient = new OSS({
+                    region: 'oss-cn-hangzhou',
+                    accessKeyId: credentials.id.trim(),
+                    accessKeySecret: credentials.secret.trim(),
+                    bucket: 'www-seikai'
+                });
+            } catch (err) {
+                alert("二级密码错误或解密失败！");
+                console.error(err);
+                return;
+            }
         }
         
-        try {
-            const decryptedBytes = CryptoJS.AES.decrypt(ENCRYPTED_CREDENTIALS, pwd);
-            const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
-            if (!decryptedText) throw new Error("解密失败");
-            
-            const credentials = JSON.parse(decryptedText);
-            ossClient = new OSS({
-                region: 'oss-cn-hangzhou',
-                accessKeyId: credentials.id.trim(),
-                accessKeySecret: credentials.secret.trim(),
-                bucket: 'www-seikai'
-            });
-        } catch (err) {
-            alert("二级密码错误或解密失败！");
-            console.error(err);
-            return;
-        }
+        let secPwdModal = document.getElementById('secPwdModal');
+        secPwdModal.classList.remove('show');
+        setTimeout(() => { secPwdModal.style.display = 'none'; }, 300);
         
-        // --- REAL SUBMIT LOGIC ---
+        if (pendingOSSCallback) {
+            let cb = pendingOSSCallback;
+            pendingOSSCallback = null;
+            cb();
+        }
+    });
+    
+    window.saveDataToOSS = async function() {
+        if (!ossClient) throw new Error("OSS client not initialized");
+        const jsonStr = JSON.stringify(recipes, null, 2);
+        const blob = new Blob([jsonStr], {type: 'application/json'});
+        await ossClient.put('public/data/recipes.json', blob);
+    };
+
+    window.submitRecipe = function() {
+        window.runWithOSS(async () => {
+            // --- REAL SUBMIT LOGIC ---
         let name = document.getElementById('pubName').value.trim();
         let diff = parseInt(document.getElementById('pubDiff').value) || 3;
         let dur = parseInt(document.getElementById('pubDur').value) || 15;
@@ -701,6 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
             publishBtn.disabled = false;
         }
     });
+    };
 
     // Render Grid
     function renderGrid() {
@@ -927,13 +951,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Expose functions for inline onclick handlers
     window.markCooked = function(recipeId) {
-        let r = recipes.find(x => x.id === recipeId);
-        if (r) {
-            if (!r.cookedStats) r.cookedStats = {};
-            r.cookedStats[userStr] = (r.cookedStats[userStr] || 0) + 1;
-            renderGrid();
-            openDetail(r);
-        }
+        window.runWithOSS(async () => {
+            let r = recipes.find(x => x.id === recipeId);
+            if (r) {
+                if (!r.cookedStats) r.cookedStats = {};
+                r.cookedStats[userStr] = (r.cookedStats[userStr] || 0) + 1;
+                try {
+                    await window.saveDataToOSS();
+                    renderGrid();
+                    openDetail(r);
+                } catch (e) {
+                    alert("更新数据失败: " + e.message);
+                }
+            }
+        });
+    };
+
+    window.deleteRecipe = function(recipeId) {
+        if (!confirm("确定要删除这道菜谱吗？此操作不可恢复！")) return;
+        
+        window.runWithOSS(async () => {
+            let idx = recipes.findIndex(x => x.id === recipeId);
+            if (idx > -1) {
+                let rToRestore = recipes[idx];
+                recipes.splice(idx, 1);
+                try {
+                    await window.saveDataToOSS();
+                    alert("删除成功！");
+                    let modal = document.getElementById('recipeDetailModal');
+                    modal.classList.remove('show');
+                    setTimeout(() => { modal.style.display = 'none'; }, 300);
+                    renderGrid();
+                    if(document.getElementById('profileView').classList.contains('active')) renderProfile();
+                } catch (e) {
+                    alert("删除失败: " + e.message);
+                    // 恢复被删的数据
+                    recipes.splice(idx, 0, rToRestore);
+                }
+            }
+        });
     };
 
     window.openEditModal = function(recipeId) {
@@ -1139,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             
-            <div class="recipe-action-bar">
+            <div class="recipe-action-bar" style="display:flex; justify-content:space-around; align-items:center; padding: 1rem;">
                 <button class="action-btn primary" onclick="window.markCooked('${recipe.id}')">
                     <i class="fa-solid fa-fire-burner"></i>
                     <span>做过 (${userCookedCount})</span>
@@ -1152,8 +1208,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-book-open"></i>
                     <span>笔记</span>
                 </button>
-                    <span style="font-weight:700;">点菜</span>
+                <button class="action-btn" style="color: #4CAF50;" onclick="window.addToCart('${recipe.id}')">
+                    <i class="fa-solid fa-cart-plus"></i>
+                    <span>点菜</span>
                 </button>
+                ${recipe.author === userStr ? `
+                <button class="action-btn" style="color: #FF5252;" onclick="window.deleteRecipe('${recipe.id}')">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>删除</span>
+                </button>
+                ` : ''}
             </div>
         `;
         
@@ -1530,11 +1594,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.finishGuide = function() {
-        guideState = 'CART';
-        cartRecipeIds = [];
-        document.querySelector('.tab-item[data-view="homeView"]').click();
-        window.renderGrid(); // update stats visually
-        renderGuide();
+        window.runWithOSS(async () => {
+            // mark all items in cart as cooked
+            let updated = false;
+            for (let id of cartRecipeIds) {
+                let r = recipes.find(x => x.id === id);
+                if (r) {
+                    if (!r.cookedStats) r.cookedStats = {};
+                    r.cookedStats[userStr] = (r.cookedStats[userStr] || 0) + 1;
+                    updated = true;
+                }
+            }
+            
+            if (updated) {
+                try {
+                    await window.saveDataToOSS();
+                } catch (e) {
+                    alert("同步做菜记录至云端失败，但本地已更新: " + e.message);
+                }
+            }
+            
+            guideState = 'CART';
+            cartRecipeIds = [];
+            document.querySelector('.tab-item[data-view="homeView"]').click();
+            window.renderGrid(); // update stats visually
+            if(document.getElementById('profileView').classList.contains('active')) renderProfile();
+            renderGuide();
+        });
     };
 
     // Swipe support for cooking
