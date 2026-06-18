@@ -4,26 +4,32 @@
     top: 0;
     z-index: 100;
     display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 0.8rem 5%;
+    flex-direction: column;
+    padding: 0.8rem 4% 0;
     background: var(--bg-panel);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--glass-border);
 }
 
-.filter-btn {
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.filter-btn, .scan-btn {
     background: transparent;
     border: none;
     color: var(--text-main);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     cursor: pointer;
     transition: transform 0.2s;
     flex-shrink: 0;
 }
 
-.filter-btn:active {
+.filter-btn:active, .scan-btn:active {
     transform: scale(0.9);
 }
 
@@ -38,14 +44,14 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .search-box input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--glass-border);
-    padding: 0.6rem 0.8rem 0.6rem 2.2rem;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    padding: 0.6rem 1rem 0.6rem 2.4rem;
     border-radius: 20px;
     color: var(--text-main);
     font-size: 0.95rem;
@@ -55,40 +61,60 @@
 
 .search-box input:focus {
     background: rgba(0, 0, 0, 0.08);
-    border-color: var(--primary-color);
 }
 
-/* Sort Controls in Header */
-.sort-container {
+/* Sort Controls */
+.sort-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
 }
 
-.sort-select {
-    background: rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
-    color: var(--text-main);
-    outline: none;
+.sort-tabs {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.sort-tab {
+    position: relative;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    padding-bottom: 0.6rem;
     cursor: pointer;
+    transition: color 0.3s, font-weight 0.3s;
+}
+
+.sort-tab.active {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.sort-tab .indicator {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 16px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sort-tab.active .indicator {
+    transform: translateX(-50%) scaleX(1);
 }
 
 .sort-order-btn {
-    background: rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--glass-border);
-    color: var(--text-main);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding-bottom: 0.6rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.85rem;
+    transition: transform 0.3s;
 }
 
 .sort-order-btn:active {

@@ -7,26 +7,29 @@
     <link rel="stylesheet" href="css/base.css?v=1.0.4">
     <link rel="stylesheet" href="css/home.css?v=1.0.4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="js/data.js?v=1.0.4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/data.js?v=1.0.5"></script>
 </head>
 <body>
     <!-- Top Action Bar -->
     <header class="top-bar" id="topBar">
-        <button class="filter-btn"><i class="fa-solid fa-filter"></i></button>
-        <div class="search-box">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索菜谱...">
+        <div class="search-row">
+            <button class="filter-btn"><i class="fa-solid fa-bars-staggered"></i></button>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索菜谱、食材...">
+            </div>
+            <button class="scan-btn"><i class="fa-solid fa-qrcode"></i></button>
         </div>
-        <div class="sort-container">
-            <select id="sortMode" class="sort-select">
-                <option value="time">时间</option>
-                <option value="difficulty">难度</option>
-                <option value="duration">时长</option>
-                <option value="proficiency">熟练度</option>
-            </select>
+        <div class="sort-row">
+            <div class="sort-tabs">
+                <div class="sort-tab active" data-sort="time">最新<div class="indicator"></div></div>
+                <div class="sort-tab" data-sort="difficulty">难度<div class="indicator"></div></div>
+                <div class="sort-tab" data-sort="duration">耗时<div class="indicator"></div></div>
+                <div class="sort-tab" data-sort="proficiency">熟练<div class="indicator"></div></div>
+            </div>
             <button id="sortOrderBtn" class="sort-order-btn" data-order="desc">
-                <i class="fa-solid fa-arrow-down-wide-short"></i>
+                <i class="fa-solid fa-arrow-down-short-wide"></i>
             </button>
         </div>
     </header>
