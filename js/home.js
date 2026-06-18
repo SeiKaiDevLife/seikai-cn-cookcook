@@ -62,11 +62,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderMatchGrid();
             }
             
-            if (targetViewId === 'publishView') {
-                renderPubSteps();
+            
+            if (targetViewId === 'menuView') {
+                renderGuide();
             }
         });
     });
+
+    window.showToast = function(msg) {
+        let t = document.createElement('div');
+        t.className = 'custom-toast';
+        t.innerText = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.classList.add('show'), 10);
+        setTimeout(() => {
+            t.classList.remove('show');
+            setTimeout(() => t.remove(), 300);
+        }, 2000);
+    };
+
+    let cartRecipeIds = [];
+    window.addToCart = function(id) {
+        if (!cartRecipeIds.includes(id)) {
+            cartRecipeIds.push(id);
+            window.showToast("已加入点菜清单！");
+            if (guideState === 'CART') renderGuide();
+        } else {
+            window.showToast("已经在清单中了");
+        }
+    };
 
     // Load Data
     let recipes = window.RECIPE_DATA || [];
@@ -187,6 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             card.innerHTML = `
+                <div class="match-list-item" onclick="window.openDetail(recipes.find(x => x.id === '${recipe.id}'))" style="position:relative;">
+                <button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')" style="position:absolute; right:1rem; top:1rem;"><i class="fa-solid fa-plus"></i></button>
                 <div class="match-list-left">
                     <img src="${recipe.coverUrl}" alt="${recipe.name}">
                 </div>
@@ -201,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
-            card.addEventListener('click', () => openDetail(recipe));
             matchRecipeGrid.appendChild(card);
         });
     }
@@ -505,7 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="cover-duration"><i class="fa-regular fa-clock"></i> ${recipe.durationMin}min</div>
                 </div>
                 <div class="recipe-info">
-                    <h3 class="recipe-title">${recipe.name}</h3>
+                    <div class="recipe-title" style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <span style="font-weight:700;">${recipe.name}</span>
+                        <button class="add-to-cart-btn" onclick="event.stopPropagation(); window.addToCart('${recipe.id}')"><i class="fa-solid fa-plus"></i></button>
+                    </div>
                     <div class="recipe-meta">
                         <div class="recipe-author">
                             <img src="${authorAvatar}" alt="author">
@@ -525,21 +553,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Events
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
+    if (document.getElementById('searchInput')) {
+        document.getElementById('searchInput').addEventListener('input', (e) => {
             searchQuery = e.target.value.trim();
             renderGrid();
         });
     }
 
-    if (sortDropdown && sortTrigger) {
+    if (document.getElementById('sortDropdown') && sortTrigger) {
         sortTrigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            sortDropdown.classList.toggle('open');
+            document.getElementById('sortDropdown').classList.toggle('open');
         });
 
         document.addEventListener('click', () => {
-            sortDropdown.classList.remove('open');
+            document.getElementById('sortDropdown').classList.remove('open');
         });
 
         sortMenuItems.forEach(item => {
@@ -883,6 +911,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-book-open"></i>
                     <span>笔记</span>
                 </button>
+                <button class="action-btn primary" onclick="window.addToCart('${recipe.id}')">
+                    <i class="fa-solid fa-plus" style="background:#059669; color:#FFF; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:0.2rem;"></i>
+                    <span style="font-weight:700;">点菜</span>
+                </button>
             </div>
         `;
         
@@ -895,6 +927,295 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render
     renderGrid();
     
+    // Guided Cooking Logic
+    let guideState = 'CART'; // CART, PREP, ORDER, COOKING, DONE
+    let cookingQueue = []; // [{ recipe, steps: [] }]
+    let currentDishIdx = 0;
+    let currentStepIdx = 0;
+    let timerInterval = null;
+
+    window.renderGuide = function() {
+        const root = document.getElementById('guideRoot');
+        if (!root) return;
+        
+        if (guideState === 'CART') {
+            let html = `
+                <div class="guide-container">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                        <h2 style="font-size:1.8rem; font-weight:800; margin:0;">点菜清单</h2>
+                    </div>
+                    
+                    <div class="search-box" style="margin-bottom: 1.5rem;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="guideSearchInput" placeholder="搜索菜谱并添加..." oninput="window.handleGuideSearch()">
+                    </div>
+                    <div id="guideSearchResults" style="margin-bottom: 2rem;"></div>
+                    
+                    <div id="cartListContainer">`;
+            if (cartRecipeIds.length === 0) {
+                html += `<div style="text-align:center; padding: 3rem 0; color:var(--text-muted);">清单空空如也，去首页或者选菜里加几个菜吧！</div>`;
+            } else {
+                cartRecipeIds.forEach(id => {
+                    let r = recipes.find(x => x.id === id);
+                    if (r) {
+                        html += `
+                            <div class="cart-item">
+                                <div style="display:flex; align-items:center; gap:1rem;">
+                                    <img src="${r.coverUrl}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                                    <div style="font-weight:700;">${r.name}</div>
+                                </div>
+                                <button class="add-to-cart-btn" onclick="window.removeFromCart('${r.id}')"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            html += `</div>
+                <button class="primary-btn" onclick="window.startPrep()" style="margin-top:2rem;" ${cartRecipeIds.length===0?'disabled style="opacity:0.5; margin-top:2rem;"':''}>开始备菜</button>
+            </div>`;
+            root.innerHTML = html;
+        } else if (guideState === 'PREP') {
+            let html = `
+                <div class="guide-container">
+                    <h2 style="font-size:1.8rem; font-weight:800; margin-bottom:1.5rem;">开始备菜</h2>
+                    <div id="prepListContainer">`;
+            let hasPrep = false;
+            cartRecipeIds.forEach(id => {
+                let r = recipes.find(x => x.id === id);
+                let prepSteps = r.steps.filter(s => s.type === 'prep');
+                if (prepSteps.length > 0) {
+                    hasPrep = true;
+                    html += `<div class="prep-dish-group">
+                        <div class="prep-dish-title"><i class="fa-solid fa-leaf"></i> ${r.name}</div>`;
+                    prepSteps.forEach((step, idx) => {
+                        html += `<div class="prep-step-item">
+                            <div class="step-num">${idx+1}.</div>
+                            <div>${step.content}</div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+            });
+            if (!hasPrep) html += `<div style="text-align:center; padding: 2rem 0; color:var(--text-muted);">所选菜品均无备菜步骤，可直接开始做菜！</div>`;
+            html += `</div>
+                <button class="primary-btn" onclick="window.goToOrder()" style="margin-top:2rem; background:#10b981;">备菜完成，准备做菜</button>
+            </div>`;
+            root.innerHTML = html;
+        } else if (guideState === 'ORDER') {
+            let html = `
+                <div class="guide-container">
+                    <h2 style="font-size:1.8rem; font-weight:800; margin-bottom:1.5rem;">调整做菜顺序</h2>
+                    <div id="orderListContainer">`;
+            cartRecipeIds.forEach((id, idx) => {
+                let r = recipes.find(x => x.id === id);
+                html += `
+                    <div class="order-item">
+                        <div style="font-weight:800; color:var(--text-muted); width:20px;">${idx+1}</div>
+                        <img src="${r.coverUrl}" style="width:50px; height:50px; border-radius:10px; object-fit:cover;">
+                        <div style="font-weight:700; flex:1;">${r.name}</div>
+                        <div class="order-controls">
+                            <button onclick="window.moveOrder(${idx}, -1)" ${idx===0?'style="opacity:0.3;"':''}><i class="fa-solid fa-chevron-up"></i></button>
+                            <button onclick="window.moveOrder(${idx}, 1)" ${idx===cartRecipeIds.length-1?'style="opacity:0.3;"':''}><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>
+                <button class="primary-btn" onclick="window.startCooking()" style="margin-top:2rem; background:#ef4444;">确认顺序，进入后厨</button>
+            </div>`;
+            root.innerHTML = html;
+        } else if (guideState === 'COOKING') {
+            if (currentDishIdx >= cookingQueue.length) return;
+            let dish = cookingQueue[currentDishIdx];
+            let step = dish.steps[currentStepIdx];
+            
+            let typeClass = 'type-cook';
+            let typeName = '烹饪';
+            if(step.type === 'timer') { typeClass = 'type-timer'; typeName = '计时'; }
+            if(step.type === 'judge') { typeClass = 'type-judge'; typeName = '判断'; }
+            
+            let extraHtml = '';
+            if (step.type === 'timer') {
+                extraHtml = `
+                    <div class="timer-container">
+                        <div class="timer-display" id="timerDisplay">${step.timerSeconds}s</div>
+                        <div class="timer-progress-bg">
+                            <div class="timer-progress-bar" id="timerProgressBar" style="width: 100%;"></div>
+                        </div>
+                        <button class="primary-btn" id="startTimerBtn" onclick="window.startStepTimer(${step.timerSeconds})" style="background:#2563eb; width:80%;">开始倒计时</button>
+                    </div>
+                `;
+            }
+            
+            let html = `
+                <div class="guide-fullscreen">
+                    <div class="cooking-header">
+                        <div class="cooking-dish-name">${dish.recipe.name}</div>
+                        <div class="cooking-progress-text">第 ${currentDishIdx+1}/${cookingQueue.length} 道菜 | 步骤 ${currentStepIdx+1}/${dish.steps.length}</div>
+                    </div>
+                    <div class="cooking-body">
+                        <div class="cooking-step-type ${typeClass}">${typeName}</div>
+                        <div class="cooking-step-content">${step.content}</div>
+                        ${extraHtml}
+                    </div>
+                    <div class="cooking-action">
+                        <button class="finish-step-btn" onclick="window.finishStep()">
+                            完成该步骤，下一步 <i class="fa-solid fa-xmark" style="font-size:1.2rem; margin-left:0.5rem; opacity:0.8;"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            root.innerHTML = html;
+        } else if (guideState === 'DONE') {
+            let html = `
+                <div class="guide-fullscreen guide-done">
+                    <div class="done-title">辛苦了！</div>
+                    <div class="done-subtitle">所有的美味都已就绪</div>
+                    <button class="done-btn" onclick="window.finishGuide()">返回首页</button>
+                </div>
+            `;
+            root.innerHTML = html;
+        }
+    };
+
+    window.removeFromCart = function(id) {
+        cartRecipeIds = cartRecipeIds.filter(x => x !== id);
+        renderGuide();
+    };
+
+    window.handleGuideSearch = function() {
+        let q = document.getElementById('guideSearchInput').value.trim().toLowerCase();
+        const resultsBox = document.getElementById('guideSearchResults');
+        if (!q) {
+            resultsBox.innerHTML = '';
+            return;
+        }
+        
+        let matches = recipes.filter(r => r.name.toLowerCase().includes(q) && !cartRecipeIds.includes(r.id));
+        if (matches.length === 0) {
+            resultsBox.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem; text-align:center;">无匹配菜谱或已在清单中</div>';
+            return;
+        }
+        
+        let html = matches.slice(0, 5).map(r => `
+            <div class="cart-item" style="padding: 0.5rem 1rem; margin-bottom: 0.5rem;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <img src="${r.coverUrl}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
+                    <div style="font-weight:600; font-size:0.95rem;">${r.name}</div>
+                </div>
+                <button class="add-to-cart-btn" onclick="window.addToCart('${r.id}'); document.getElementById('guideSearchInput').value=''; window.handleGuideSearch();"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        `).join('');
+        resultsBox.innerHTML = html;
+    };
+
+    window.startPrep = function() {
+        if (cartRecipeIds.length === 0) return;
+        guideState = 'PREP';
+        renderGuide();
+    };
+
+    window.goToOrder = function() {
+        guideState = 'ORDER';
+        renderGuide();
+    };
+
+    window.moveOrder = function(idx, dir) {
+        if (idx + dir < 0 || idx + dir >= cartRecipeIds.length) return;
+        let temp = cartRecipeIds[idx];
+        cartRecipeIds[idx] = cartRecipeIds[idx + dir];
+        cartRecipeIds[idx + dir] = temp;
+        renderGuide();
+    };
+
+    window.startCooking = function() {
+        cookingQueue = cartRecipeIds.map(id => {
+            let r = recipes.find(x => x.id === id);
+            let steps = r.steps.filter(s => s.type !== 'prep');
+            return { recipe: r, steps: steps };
+        }).filter(q => q.steps.length > 0);
+        
+        if (cookingQueue.length === 0) {
+            guideState = 'DONE';
+            renderGuide();
+            return;
+        }
+        
+        currentDishIdx = 0;
+        currentStepIdx = 0;
+        guideState = 'COOKING';
+        renderGuide();
+    };
+
+    window.startStepTimer = function(seconds) {
+        if (timerInterval) clearInterval(timerInterval);
+        let left = seconds;
+        const display = document.getElementById('timerDisplay');
+        const bar = document.getElementById('timerProgressBar');
+        const btn = document.getElementById('startTimerBtn');
+        if(btn) btn.style.display = 'none';
+        
+        timerInterval = setInterval(() => {
+            left--;
+            if (display) display.innerText = left + 's';
+            if (bar) bar.style.width = (left / seconds * 100) + '%';
+            if (left <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                if (display) display.innerText = '时间到！';
+            }
+        }, 1000);
+    };
+
+    window.finishStep = function() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        currentStepIdx++;
+        let dish = cookingQueue[currentDishIdx];
+        
+        if (currentStepIdx >= dish.steps.length) {
+            // Add cooked stats
+            let today = new Date().toISOString().split('T')[0];
+            if (!dish.recipe.cookedStats[today]) dish.recipe.cookedStats[today] = 0;
+            dish.recipe.cookedStats[today]++;
+            window.showToast(`✅ ${dish.recipe.name} 制作完成！`);
+            
+            currentDishIdx++;
+            currentStepIdx = 0;
+        }
+        
+        if (currentDishIdx >= cookingQueue.length) {
+            guideState = 'DONE';
+        }
+        
+        renderGuide();
+    };
+
+    window.finishGuide = function() {
+        guideState = 'CART';
+        cartRecipeIds = [];
+        document.querySelector('.tab-item[data-view="homeView"]').click();
+        renderGrid(); // update stats visually
+        renderGuide();
+    };
+
+    // Swipe support for cooking
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+        if (guideState === 'COOKING') touchStartX = e.changedTouches[0].screenX;
+    });
+    document.addEventListener('touchend', e => {
+        if (guideState === 'COOKING') {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 80) { // swipe left
+                window.finishStep();
+            }
+        }
+    });
+
     // Carousel Logic
     window.scrollCarousel = function(dir) {
         const carousel = document.getElementById('detailCarousel');
