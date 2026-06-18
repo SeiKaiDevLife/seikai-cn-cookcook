@@ -1,7 +1,7 @@
 // Auto-generated from _uploader/recipes.json
 window.RECIPE_DATA = [
   {
-    "id": "recipe_1718698293",
+    "id": "recipe_001",
     "name": "西红柿炒鸡蛋",
     "coverUrl": "assets/cover.jpg",
     "author": "seikai",
