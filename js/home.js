@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentNoteRecipeId = null;
 
     // Tab Switching Logic
-    const tabItems = document.querySelectorAll('.tab-item:not(.publish-tab)');
+    const tabItems = document.querySelectorAll('.tab-item');
     const viewSections = document.querySelectorAll('.view-section');
 
     tabItems.forEach(tab => {
