@@ -110,9 +110,9 @@
 }
 
 .dropdown-item.active {
-    color: var(--primary-color);
+    color: var(--text-main);
     font-weight: 600;
-    background: rgba(255, 107, 107, 0.05);
+    background: rgba(0, 0, 0, 0.06);
 }
 
 .sort-order-btn {
@@ -285,6 +285,8 @@
 
 .publish-tab {
     flex: 0 0 56px;
+    padding: 0 10px;
+    box-sizing: content-box;
 }
 
 .publish-btn {
@@ -487,16 +489,21 @@
 }
 
 .type-prep .step-number { background: #10b981; }
+.type-prep .step-content { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); }
+
 .type-cook .step-number { background: #ef4444; }
+.type-cook .step-content { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+
 .type-timer .step-number { background: #3b82f6; }
+.type-timer .step-content { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); }
+
 .type-judge .step-number { background: #f59e0b; }
+.type-judge .step-content { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); }
 
 .step-content {
     flex: 1;
-    background: #fff;
     padding: 1.2rem;
     border-radius: 16px;
-    box-shadow: var(--shadow-sm);
 }
 
 .step-content p {
