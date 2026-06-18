@@ -2,12 +2,12 @@
 window.RECIPE_DATA = [
   {
     "id": "recipe_001",
-    "name": "西红柿炒鸡蛋",
-    "coverUrl": "assets/cover.jpg",
+    "name": "豆角焖面",
+    "coverUrl": "public/images/covers/recipe_001.jpg",
     "author": "seikai",
-    "createTime": "2026-06-18 10:00:00",
-    "difficulty": 2,
-    "durationMin": 15,
+    "createTime": "2026-06-16 10:00:00",
+    "difficulty": 3,
+    "durationMin": 20,
     "cookedStats": {
       "seikai": 3,
       "echo": 1
@@ -36,36 +36,92 @@ window.RECIPE_DATA = [
       {
         "id": "s1",
         "type": "prep",
-        "content": "西红柿切块，鸡蛋打散，葱切葱花"
+        "content": "五花肉切片"
       },
       {
         "id": "s2",
-        "type": "cook",
-        "content": "热锅倒油，倒入鸡蛋液炒熟盛出"
+        "type": "prep",
+        "content": "蒜末、豆角切段"
       },
       {
         "id": "s3",
-        "type": "timer",
-        "content": "倒入西红柿炒出汁，加少许水焖煮",
-        "timerSeconds": 180
+        "type": "cook",
+        "content": "锅中倒油，把油烧热一些，转小火"
       },
       {
         "id": "s4",
+        "type": "cook",
+        "content": "推入面条，平铺一下，合适的时候翻面"
+      },
+      {
+        "id": "s5",
         "type": "judge",
-        "content": "收汁至浓稠，加入炒好的鸡蛋和盐翻匀，撒葱花出锅"
+        "content": "煎到两面略带焦焦翠翠的样子，盛出来放一边备用"
+      },
+      {
+        "id": "s6",
+        "type": "cook",
+        "content": "倒入油，油热之后，中大火下肉翻炒"
+      },
+      {
+        "id": "s7",
+        "type": "judge",
+        "content": "炒到肉微焦转小火，下葱姜蒜、干辣椒和一个八角，炒出香味"
+      },
+      {
+        "id": "s8",
+        "type": "cook",
+        "content": "放入豆角转大火翻炒"
+      },
+      {
+        "id": "s9",
+        "type": "cook",
+        "content": "转小火放调料，十三香、生抽、老抽、盐半勺"
+      },
+      {
+        "id": "s10",
+        "type": "judge",
+        "content": "转大火翻炒，将豆角炒到翠绿色，倒入开水，刚刚没过食材"
+      },
+      {
+        "id": "s11",
+        "type": "judge",
+        "content": "转大火烧开水，转中火"
+      },
+      {
+        "id": "s12",
+        "type": "timer",
+        "content": "盖上锅盖炖五分钟",
+        "timerSeconds": 300
+      },
+      {
+        "id": "s13",
+        "type": "cook",
+        "content": "转最小火，放入面条，汤汁浇在面上"
+      },
+      {
+        "id": "s14",
+        "type": "timer",
+        "content": "小火焖十分钟",
+        "timerSeconds": 600
+      },
+      {
+        "id": "s15",
+        "type": "cook",
+        "content": "出锅前撒上蒜末，香油，一点点锅边醋"
       }
     ],
     "tutorials": {
       "type": "video",
       "urls": [
-        "assets/tutorial.mp4"
+        "public/videos/compass/recipe_001.mp4"
       ]
     },
     "notes": [
       {
-        "stepId": "s2",
+        "stepId": "s15",
         "author": "echo",
-        "content": "鸡蛋一定要用大火炒才蓬松！"
+        "content": "醋不要倒太多"
       }
     ]
   }
