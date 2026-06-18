@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             let myCooked = recipe.cookedStats ? (recipe.cookedStats[userStr] || 0) : 0;
-            let cookedHtml = `<span style="margin-left: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-fire-burner"></i> 做过 ${myCooked} 次</span>`;
+            let cookedHtml = `<span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-fire-burner"></i> 做过 ${myCooked} 次</span>`;
 
             let authorAvatar = recipe.author === 'echo' ? 'public/images/avatars/echo.webp' : 'public/images/avatars/seikai.webp';
 
@@ -139,8 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <img src="${authorAvatar}" alt="author">
                             <span>${recipe.author}</span>
                         </div>
-                        <div class="recipe-stats" style="display: flex; align-items: center;">
-                            <div>${starsHtml}</div>
+                        <div class="recipe-stats" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
+                            <div style="font-size: 0.75rem;">${starsHtml}</div>
                             ${cookedHtml}
                         </div>
                     </div>

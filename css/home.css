@@ -723,27 +723,24 @@
     color: var(--text-main);
 }
 
-.profile-actions-fixed {
-    position: fixed;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    z-index: 100;
+.profile-actions {
+    margin-top: 3rem;
+    padding: 0 5%;
+    display: flex;
+    justify-content: center;
 }
 
 .logout-btn {
-    width: 100%;
-    padding: 1.2rem;
-    border-radius: 20px;
+    width: 200px;
+    padding: 0.9rem;
+    border-radius: 30px;
     background: #FFF;
     color: #ef4444;
     border: 1px solid #fee2e2;
-    font-size: 1.1rem;
-    font-weight: 800;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.05);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
     transition: all 0.2s;
 }
 
