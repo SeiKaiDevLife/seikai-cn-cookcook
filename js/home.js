@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetViewId === 'ingredientsView') {
                 renderMatchGrid();
             }
+            
+            if (targetViewId === 'publishView') {
+                renderPubSteps();
+            }
         });
     });
 
@@ -201,6 +205,115 @@ document.addEventListener('DOMContentLoaded', () => {
             matchRecipeGrid.appendChild(card);
         });
     }
+
+    // Publish Logic
+    let pubSteps = [];
+    
+    window.addPubStep = function(type) {
+        pubSteps.push({
+            id: 's' + Date.now(),
+            type: type,
+            content: '',
+            timerSeconds: type === 'timer' ? 60 : 0
+        });
+        renderPubSteps();
+    };
+    
+    window.removePubStep = function(idx) {
+        pubSteps.splice(idx, 1);
+        renderPubSteps();
+    };
+    
+    window.updatePubStep = function(idx, key, val) {
+        pubSteps[idx][key] = val;
+    };
+    
+    function renderPubSteps() {
+        const container = document.getElementById('pubStepsContainer');
+        if (!container) return;
+        
+        container.innerHTML = pubSteps.map((step, idx) => {
+            let typeName = '';
+            if(step.type === 'prep') typeName = '备菜';
+            else if(step.type === 'cook') typeName = '烧菜';
+            else if(step.type === 'timer') typeName = '计时';
+            else if(step.type === 'judge') typeName = '判断';
+            
+            let extraHtml = '';
+            if (step.type === 'timer') {
+                extraHtml = `<input type="number" value="${step.timerSeconds}" onchange="window.updatePubStep(${idx}, 'timerSeconds', parseInt(this.value))" placeholder="秒数" style="width: 80px; margin-top: 0.5rem; padding: 0.4rem; border-radius: 8px; border: 1px solid #CCC;"> 秒`;
+            }
+            
+            return `
+                <div class="pub-step-item ${step.type}">
+                    <button class="remove-step" onclick="window.removePubStep(${idx})">&times;</button>
+                    <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-muted);">步骤 ${idx+1} - ${typeName}</div>
+                    <textarea rows="2" style="width: 100%; border: 1px solid #EEE; padding: 0.5rem; border-radius: 8px; resize: none; font-family: inherit; font-size: 0.95rem; outline: none;" onchange="window.updatePubStep(${idx}, 'content', this.value)" placeholder="输入步骤说明...">${step.content}</textarea>
+                    ${extraHtml}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    window.submitRecipe = function() {
+        let pwd = prompt("请输入二级密码以确认发布（提示：123456）：");
+        if (pwd !== "123456") {
+            alert("二级密码错误！");
+            return;
+        }
+        
+        let name = document.getElementById('pubName').value.trim();
+        let cover = document.getElementById('pubCover').value.trim() || 'public/images/covers/recipe_001.webp';
+        let diff = parseInt(document.getElementById('pubDiff').value) || 3;
+        let dur = parseInt(document.getElementById('pubDur').value) || 15;
+        
+        let ingsRaw = document.getElementById('pubIngs').value.trim();
+        let seasRaw = document.getElementById('pubSeas').value.trim();
+        
+        if (!name) { alert("菜谱名称不能为空！"); return; }
+        
+        let newIngs = [];
+        if (ingsRaw) {
+            newIngs = ingsRaw.split('\n').map(line => {
+                let parts = line.trim().split(/\s+/);
+                if (parts.length >= 2) return { name: parts[0], amount: parts.slice(1).join(' ') };
+                return { name: line.trim(), amount: '' };
+            }).filter(i => i.name);
+        }
+        
+        let newSeas = seasRaw ? seasRaw.split('\n').map(l => l.trim()).filter(l => l) : [];
+        
+        let newRecipe = {
+            id: 'recipe_' + Date.now(),
+            name: name,
+            coverUrl: cover,
+            author: userStr,
+            createTime: new Date().toISOString().split('T')[0] + " 12:00:00",
+            difficulty: diff,
+            durationMin: dur,
+            cookedStats: {},
+            materials: {
+                ingredients: newIngs,
+                seasonings: newSeas
+            },
+            steps: pubSteps,
+            notes: []
+        };
+        
+        recipes.unshift(newRecipe);
+        alert("发布成功！(数据仅在本次刷新前有效)");
+        
+        // Return to home view
+        document.querySelector('.tab-item[data-view="homeView"]').click();
+        
+        // Reset form
+        document.getElementById('pubName').value = '';
+        document.getElementById('pubCover').value = '';
+        document.getElementById('pubIngs').value = '';
+        document.getElementById('pubSeas').value = '';
+        pubSteps = [];
+        renderPubSteps();
+    };
 
     // Render Grid
     function renderGrid() {

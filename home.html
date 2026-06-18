@@ -61,8 +61,55 @@
         </div>
         
         <div id="publishView" class="view-section">
-            <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                <h2>发布功能开发中...</h2>
+            <div class="publish-header">
+                <h2>发布新菜谱</h2>
+            </div>
+            <div class="publish-body">
+                <div class="form-group">
+                    <label>菜谱名称</label>
+                    <input type="text" id="pubName" placeholder="例如：西红柿炒鸡蛋">
+                </div>
+                <div class="form-group">
+                    <label>封面图片链接</label>
+                    <input type="text" id="pubCover" placeholder="支持公网图片 URL（留空默认）">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>难度 (1-5)</label>
+                        <input type="number" id="pubDiff" min="1" max="5" value="3">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>耗时 (分钟)</label>
+                        <input type="number" id="pubDur" value="15">
+                    </div>
+                </div>
+                
+                <div class="publish-section">
+                    <h3>食材与佐料</h3>
+                    <div class="form-group">
+                        <label>食材 (格式: 名称 数量，每行一个)</label>
+                        <textarea id="pubIngs" rows="3" placeholder="鸡蛋 3个&#10;西红柿 2个"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>佐料 (每行一个)</label>
+                        <textarea id="pubSeas" rows="2" placeholder="盐&#10;白糖"></textarea>
+                    </div>
+                </div>
+                
+                <div class="publish-section">
+                    <h3>制作步骤</h3>
+                    <div id="pubStepsContainer"></div>
+                    
+                    <div class="add-step-bar">
+                        <button class="add-step-btn step-prep" onclick="window.addPubStep('prep')">+ 备菜</button>
+                        <button class="add-step-btn step-cook" onclick="window.addPubStep('cook')">+ 烧菜</button>
+                        <button class="add-step-btn step-timer" onclick="window.addPubStep('timer')">+ 计时</button>
+                        <button class="add-step-btn step-judge" onclick="window.addPubStep('judge')">+ 判断</button>
+                    </div>
+                </div>
+                
+                <button class="primary-btn" onclick="window.submitRecipe()" style="margin-top: 2rem;">发布菜谱</button>
             </div>
         </div>
         
