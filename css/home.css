@@ -850,6 +850,14 @@
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
+}
+
+.ing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 /* Guided Cooking (Compass) Styles */
 .custom-toast {
     position: fixed;
